@@ -1,0 +1,62 @@
+package qws
+
+import (
+	"encoding/json"
+	"log"
+
+	"github.com/gorilla/websocket"
+)
+
+type UserList map[int64]*UserConn
+
+// Broadcast sends the provided message to every user in the list.
+func (l UserList) Broadcast(cmd string, data interface{}) error {
+	m, err := getPrepared(cmd, data)
+	if err != nil {
+		return err
+	}
+	for _, u := range l {
+		err = u.Conn.SendPrepared(m)
+		if err != nil {
+			log.Println(err)
+			u.Conn.Close()
+		}
+	}
+	return nil
+}
+
+// BroadcastExcept sends the provided message to every user in the list except
+// the provided user.
+func (l UserList) BroadcastExcept(cmd string, data interface{}, e *UserConn) error {
+	return l.BroadcastFilter(cmd, data, func(u *UserConn) bool {
+		return u.SId != e.SId
+	})
+}
+
+// BroadcastFilter sends the provided message to every user in the list for which
+// the provided filter func returns true.
+func (l UserList) BroadcastFilter(cmd string, data interface{}, filter func(*UserConn) bool) error {
+	m, err := getPrepared(cmd, data)
+	if err != nil {
+		return err
+	}
+	for _, u := range l {
+		if !filter(u) {
+			continue
+		}
+		err = u.Conn.SendPrepared(m)
+		if err != nil {
+			log.Println(err)
+			u.Conn.Close()
+		}
+	}
+	return nil
+}
+
+func getPrepared(cmd string, data interface{}) (*websocket.PreparedMessage, error) {
+	b, err := json.Marshal(Message{Cmd: cmd, Data: data})
+	if err != nil {
+		return nil, err
+	}
+	return websocket.NewPreparedMessage(websocket.TextMessage, b)
+}
