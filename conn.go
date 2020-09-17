@@ -12,13 +12,15 @@ import (
 )
 
 type RawMessage struct {
-	Cmd  incmds.Cmd      `json:"cmd"`
-	Data json.RawMessage `json:"data"`
+	Cmd  incmds.Cmd      `json:"cmd,omitempty"`
+	Id   uint32          `json:"id,omitempty"`
+	Data json.RawMessage `json:"data,omitempty"`
 }
 
 type Message struct {
-	Cmd  outcmds.Cmd `json:"cmd"`
-	Data interface{} `json:"data"`
+	Cmd  outcmds.Cmd `json:"cmd,omitempty"`
+	Id   uint32      `json:"id,omitempty"`
+	Data interface{} `json:"data,omitempty"`
 }
 
 type Info struct {
@@ -57,7 +59,7 @@ func (c *UserConn) PrintName() string {
 func (c *Conn) Send(cmd outcmds.Cmd, data interface{}) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	err := c.Conn.WriteJSON(Message{cmd, data})
+	err := c.Conn.WriteJSON(Message{Cmd: cmd, Data: data})
 	if err != nil {
 		c.Close()
 	}

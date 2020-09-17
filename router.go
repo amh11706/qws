@@ -57,6 +57,14 @@ func (r *Router) Handle(command incmds.Cmd, h Handler) error {
 	return nil
 }
 
+func (r *Router) HandleDynamic(command incmds.Cmd, h interface{}) error {
+	return r.Handle(command, NewDynamicHandler(h))
+}
+
+func (r *Router) HandleReturning(command incmds.Cmd, h func(c *UserConn, m *RawMessage) interface{}) error {
+	return r.Handle(command, ReturningFunc(h))
+}
+
 func (r *Router) RemoveCommand(command incmds.Cmd) {
 	r.lock.Lock()
 	delete(r.routes, command)

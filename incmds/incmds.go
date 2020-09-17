@@ -3,7 +3,8 @@ package incmds
 type Cmd int16
 
 const (
-	InventoryCmd Cmd = iota
+	GlobalCommands Cmd = iota
+	InventoryCmd
 
 	SettingSet
 	SettingGetGroup
@@ -28,10 +29,9 @@ const (
 	StatsTop
 )
 
-const LobbyCmds Cmd = 100
-
 const (
-	LobbyCreate Cmd = iota + LobbyCmds + 1
+	LobbyCmds Cmd = iota + 100
+	LobbyCreate
 	LobbyApply
 	ChatMessage
 

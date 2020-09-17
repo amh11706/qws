@@ -3,7 +3,8 @@ package outcmds
 type Cmd int16
 
 const (
-	SessionId Cmd = iota
+	GlobalCommands Cmd = iota
+	SessionId
 	Copy
 	Kick
 	ChatMessage
@@ -35,10 +36,9 @@ const (
 	TileSetList
 )
 
-const LobbyCmds Cmd = 100
-
 const (
-	LobbyUpdate Cmd = iota + LobbyCmds + 1
+	LobbyCmds Cmd = iota + 100
+	LobbyUpdate
 	LobbyList
 	LobbyRemove
 	PlayerAdd
