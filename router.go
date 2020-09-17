@@ -1,9 +1,11 @@
 package qws
 
 import (
-	"errors"
+	"fmt"
 	"log"
 	"sync"
+
+	"github.com/amh11706/qws/incmds"
 )
 
 type Handler interface {
@@ -17,7 +19,7 @@ func (f HandlerFunc) ServeWS(c *UserConn, m *RawMessage) {
 }
 
 type Router struct {
-	routes map[string]Handler
+	routes map[incmds.Cmd]Handler
 	lock   sync.Mutex
 }
 
@@ -26,50 +28,36 @@ func (r *Router) ServeWS(c *UserConn, m *RawMessage) {
 		log.Println("No assigned handlers for user", c.User.Id)
 		return
 	}
-	var bestMatch Handler
-	var bestLen = 0
 
-	r.lock.Lock()
-	for command, handler := range r.routes {
-		if command == m.Cmd {
-			bestMatch = handler
-			break
-		}
-		if len(command) < len(m.Cmd) && m.Cmd[:len(command)] == command {
-			if bestMatch == nil || bestLen < len(command) {
-				bestLen, bestMatch = len(command), handler
-			}
-		}
+	cmd := m.Cmd
+	if cmd > incmds.LobbyCmds && r.routes[incmds.LobbyCmds] != nil {
+		cmd = incmds.LobbyCmds
 	}
-	r.lock.Unlock()
-
-	if bestMatch != nil {
-		if bestLen > 0 && len(m.Cmd) > bestLen {
-			m.Cmd = m.Cmd[bestLen:]
-		}
-		bestMatch.ServeWS(c, m)
+	if handler := r.routes[cmd]; handler != nil {
+		handler.ServeWS(c, m)
 	} else {
 		log.Println("No matching handlers for user", c.User.Id, "and cmd", m.Cmd)
+		fmt.Println(r.routes)
 	}
 }
 
-func (r *Router) HandleFunc(command string, h func(c *UserConn, m *RawMessage)) error {
+func (r *Router) HandleFunc(command incmds.Cmd, h func(c *UserConn, m *RawMessage)) error {
 	return r.Handle(command, HandlerFunc(h))
 }
 
-func (r *Router) Handle(command string, h Handler) error {
+func (r *Router) Handle(command incmds.Cmd, h Handler) error {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	if r.routes == nil {
-		r.routes = make(map[string]Handler)
+		r.routes = make(map[incmds.Cmd]Handler)
 	} else if _, set := r.routes[command]; set {
-		return errors.New("AddCommand: command already registered: " + command)
+		return fmt.Errorf("AddCommand: command already registered: %d", command)
 	}
 	r.routes[command] = h
 	return nil
 }
 
-func (r *Router) RemoveCommand(command string) {
+func (r *Router) RemoveCommand(command incmds.Cmd) {
 	r.lock.Lock()
 	delete(r.routes, command)
 	r.lock.Unlock()

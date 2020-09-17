@@ -6,16 +6,18 @@ import (
 	"sync"
 
 	"github.com/amh11706/logger"
+	"github.com/amh11706/qws/incmds"
+	"github.com/amh11706/qws/outcmds"
 	"github.com/gorilla/websocket"
 )
 
 type RawMessage struct {
-	Cmd  string          `json:"cmd"`
+	Cmd  incmds.Cmd      `json:"cmd"`
 	Data json.RawMessage `json:"data"`
 }
 
 type Message struct {
-	Cmd  string      `json:"cmd"`
+	Cmd  outcmds.Cmd `json:"cmd"`
 	Data interface{} `json:"data"`
 }
 
@@ -52,7 +54,7 @@ func (c *UserConn) PrintName() string {
 	return fmt.Sprintf("%s(%d)", c.User.Name, c.Copy)
 }
 
-func (c *Conn) Send(cmd string, data interface{}) error {
+func (c *Conn) Send(cmd outcmds.Cmd, data interface{}) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	err := c.Conn.WriteJSON(Message{cmd, data})
@@ -67,7 +69,7 @@ func NewInfo(m string) *Info {
 }
 
 func (c *Conn) SendInfo(m string) {
-	logger.Check(c.Send("m", &Info{Message: m}))
+	logger.Check(c.Send(outcmds.ChatMessage, &Info{Message: m}))
 }
 
 func (c *Conn) WriteMessage(mType int, data []byte) error {

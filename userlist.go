@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"log"
 
+	"github.com/amh11706/qws/outcmds"
 	"github.com/gorilla/websocket"
 )
 
 type UserList map[int64]*UserConn
 
 // Broadcast sends the provided message to every user in the list.
-func (l UserList) Broadcast(cmd string, data interface{}) error {
+func (l UserList) Broadcast(cmd outcmds.Cmd, data interface{}) error {
 	m, err := getPrepared(cmd, data)
 	if err != nil {
 		return err
@@ -27,7 +28,7 @@ func (l UserList) Broadcast(cmd string, data interface{}) error {
 
 // BroadcastExcept sends the provided message to every user in the list except
 // the provided user.
-func (l UserList) BroadcastExcept(cmd string, data interface{}, e *UserConn) error {
+func (l UserList) BroadcastExcept(cmd outcmds.Cmd, data interface{}, e *UserConn) error {
 	return l.BroadcastFilter(cmd, data, func(u *UserConn) bool {
 		return u.SId != e.SId
 	})
@@ -35,7 +36,7 @@ func (l UserList) BroadcastExcept(cmd string, data interface{}, e *UserConn) err
 
 // BroadcastFilter sends the provided message to every user in the list for which
 // the provided filter func returns true.
-func (l UserList) BroadcastFilter(cmd string, data interface{}, filter func(*UserConn) bool) error {
+func (l UserList) BroadcastFilter(cmd outcmds.Cmd, data interface{}, filter func(*UserConn) bool) error {
 	m, err := getPrepared(cmd, data)
 	if err != nil {
 		return err
@@ -53,7 +54,7 @@ func (l UserList) BroadcastFilter(cmd string, data interface{}, filter func(*Use
 	return nil
 }
 
-func getPrepared(cmd string, data interface{}) (*websocket.PreparedMessage, error) {
+func getPrepared(cmd outcmds.Cmd, data interface{}) (*websocket.PreparedMessage, error) {
 	b, err := json.Marshal(Message{Cmd: cmd, Data: data})
 	if err != nil {
 		return nil, err
