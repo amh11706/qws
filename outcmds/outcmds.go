@@ -11,9 +11,6 @@ const (
 	NavigateTo
 	LobbyInvite
 	SettingSet
-	SettingsGet
-	StatsUser
-	StatsTop
 
 	BlockUser
 	UnblockUser
@@ -29,11 +26,6 @@ const (
 	IntentoryOpen
 	InventoryCoin
 	InventoryUpdate
-
-	MapList
-	CgMapList
-	StructureSetList
-	TileSetList
 )
 
 const (
@@ -45,9 +37,6 @@ const (
 	PlayerList
 	PlayerRemove
 
-	BnavPositions
-	BnavSavedPosition
-
 	LobbyJoin
 	Sync
 	NewBoat
@@ -58,15 +47,6 @@ const (
 	Bomb
 	Ready
 	BoatTick
-
-	WeightSaved
-	TileSet
-	StructureSet
-	Map
-	Maps
-	MapSaved
-	MapCreated
-	MapDeleted
 
 	Bidding
 	Playing
