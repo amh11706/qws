@@ -5,6 +5,7 @@ type Cmd int16
 const (
 	GlobalCommands Cmd = iota
 	InventoryCmd
+	ChatCommand
 
 	SettingSet
 	SettingGetGroup

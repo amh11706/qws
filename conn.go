@@ -41,7 +41,8 @@ type Setting struct {
 type UserConn struct {
 	Conn           *Conn
 	User           *User
-	Router         Router
+	Router         *Router
+	CmdRouter      *CmdRouter
 	Settings       map[string]byte
 	SId            int64
 	Copy           int64
