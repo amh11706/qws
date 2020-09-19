@@ -35,6 +35,11 @@ func (r *Router) ServeWS(c *UserConn, m *RawMessage) {
 	}
 	if handler := r.routes[cmd]; handler != nil {
 		handler.ServeWS(c, m)
+		if m.Id > 0 {
+			c.Conn.mutex.Lock()
+			_ = c.Conn.WriteJSON(Message{Id: m.Id})
+			c.Conn.mutex.Unlock()
+		}
 	} else {
 		log.Println("No matching handlers for user", c.User.Id, "and cmd", m.Cmd)
 		fmt.Println(r.routes)
