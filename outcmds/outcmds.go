@@ -9,7 +9,6 @@ const (
 	Kick
 	ChatMessage
 	NavigateTo
-	LobbyInvite
 	SettingSet
 
 	BlockUser
