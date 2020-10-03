@@ -68,7 +68,7 @@ func (r *CmdRouter) ServeWS(c *UserConn, m *RawMessage) {
 			}
 		}
 		if len(input) > last {
-			params = append(params, string(input[last:]))
+			params = append(params, string(input[last+1:]))
 			wantParams--
 		}
 		for wantParams > 0 {
