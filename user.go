@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/amh11706/logger"
 	"github.com/amh11706/qdb"
@@ -31,6 +32,7 @@ type User struct {
 	Online    map[string]UserList
 	Blocked   map[string]struct{}
 	Invites   []*Invitation
+	Lock      sync.Mutex
 }
 
 func (u *User) MarshalJSON() ([]byte, error) {
@@ -38,6 +40,7 @@ func (u *User) MarshalJSON() ([]byte, error) {
 }
 
 func (u *User) RemoveInvite(invite *Invitation) {
+	u.Lock.Lock()
 	newInvites := make([]*Invitation, 0, len(u.Invites)-1)
 	for _, inv := range u.Invites {
 		if inv != invite {
@@ -45,6 +48,7 @@ func (u *User) RemoveInvite(invite *Invitation) {
 		}
 	}
 	u.Invites = newInvites
+	u.Lock.Unlock()
 }
 
 func (u *User) SaveSeen() {

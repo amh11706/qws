@@ -16,13 +16,12 @@ const (
 	FriendOnline
 	FriendOffline
 	FriendList
-	FriendInvite
 	FriendAdd
 	FriendRemove
 	InviteAdd
 	InviteRemove
 
-	IntentoryOpen
+	InventoryOpen
 	InventoryCoin
 	InventoryUpdate
 )
