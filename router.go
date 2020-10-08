@@ -30,10 +30,12 @@ func (r *Router) ServeWS(c *UserConn, m *RawMessage) {
 	}
 
 	cmd := m.Cmd
+	r.lock.Lock()
 	if cmd > incmds.LobbyCmds && r.routes[incmds.LobbyCmds] != nil {
 		cmd = incmds.LobbyCmds
 	}
 	if handler := r.routes[cmd]; handler != nil {
+		r.lock.Unlock()
 		handler.ServeWS(c, m)
 		if m.Id > 0 {
 			c.Conn.mutex.Lock()
@@ -43,6 +45,7 @@ func (r *Router) ServeWS(c *UserConn, m *RawMessage) {
 	} else {
 		log.Println("No matching handlers for user", c.User.Id, "and cmd", m.Cmd)
 		fmt.Println(r.routes)
+		r.lock.Unlock()
 	}
 }
 
