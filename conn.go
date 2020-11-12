@@ -58,6 +58,9 @@ func (c *UserConn) PrintName() string {
 }
 
 func (c *Conn) Send(cmd outcmds.Cmd, data interface{}) error {
+	if c == nil {
+		return nil
+	}
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	err := c.Conn.WriteJSON(Message{Cmd: cmd, Data: data})
@@ -76,12 +79,18 @@ func (c *Conn) SendInfo(m string) {
 }
 
 func (c *Conn) WriteMessage(mType int, data []byte) error {
+	if c == nil {
+		return nil
+	}
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	return c.Conn.WriteMessage(mType, data)
 }
 
 func (c *Conn) SendPrepared(m *websocket.PreparedMessage) error {
+	if c == nil {
+		return nil
+	}
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	return c.Conn.WritePreparedMessage(m)
