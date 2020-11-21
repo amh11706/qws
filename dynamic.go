@@ -32,13 +32,13 @@ func (h *DynamicHandler) ServeWS(c *UserConn, m *RawMessage) {
 	}
 
 	if m.Id > 0 && len(out) > 0 {
-		c.Conn.mutex.Lock()
-		_ = c.Conn.WriteJSON(Message{Id: m.Id, Data: out[0].Interface()})
-		c.Conn.mutex.Unlock()
+		c.mutex.Lock()
+		_ = c.WriteJSON(Message{Id: m.Id, Data: out[0].Interface()})
+		c.mutex.Unlock()
 	} else if m.Id > 0 {
-		c.Conn.mutex.Lock()
-		_ = c.Conn.WriteJSON(Message{Id: m.Id})
-		c.Conn.mutex.Unlock()
+		c.mutex.Lock()
+		_ = c.WriteJSON(Message{Id: m.Id})
+		c.mutex.Unlock()
 	}
 }
 

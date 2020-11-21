@@ -39,7 +39,7 @@ type Setting struct {
 }
 
 type UserConn struct {
-	Conn           *Conn
+	*Conn
 	User           *User
 	Router         *Router
 	CmdRouter      *CmdRouter
@@ -62,8 +62,8 @@ func (c *Conn) Send(cmd outcmds.Cmd, data interface{}) error {
 		return nil
 	}
 	c.mutex.Lock()
-	defer c.mutex.Unlock()
-	err := c.Conn.WriteJSON(Message{Cmd: cmd, Data: data})
+	err := c.WriteJSON(Message{Cmd: cmd, Data: data})
+	c.mutex.Unlock()
 	if err != nil {
 		c.Close()
 	}
@@ -93,5 +93,5 @@ func (c *Conn) SendPrepared(m *websocket.PreparedMessage) error {
 	}
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	return c.Conn.WritePreparedMessage(m)
+	return c.WritePreparedMessage(m)
 }

@@ -17,10 +17,10 @@ func (l UserList) Broadcast(cmd outcmds.Cmd, data interface{}) error {
 		return err
 	}
 	for _, u := range l {
-		err = u.Conn.SendPrepared(m)
+		err = u.SendPrepared(m)
 		if err != nil {
 			log.Println(err)
-			u.Conn.Close()
+			u.Close()
 		}
 	}
 	return nil
@@ -45,10 +45,10 @@ func (l UserList) BroadcastFilter(cmd outcmds.Cmd, data interface{}, filter func
 		if !filter(u) {
 			continue
 		}
-		err = u.Conn.SendPrepared(m)
+		err = u.SendPrepared(m)
 		if err != nil {
 			log.Println(err)
-			u.Conn.Close()
+			u.Close()
 		}
 	}
 	return nil
