@@ -1,6 +1,7 @@
 package qws
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -51,8 +52,8 @@ func (u *User) RemoveInvite(invite *Invitation) {
 	u.Lock.Unlock()
 }
 
-func (u *User) SaveSeen() {
-	_, err := qdb.DB.Exec("UPDATE users SET last_seen=NOW() WHERE id=?", u.Id)
+func (u *User) SaveSeen(ctx context.Context) {
+	_, err := qdb.DB.ExecContext(ctx, "UPDATE users SET last_seen=NOW() WHERE id=?", u.Id)
 	logger.CheckP(err, fmt.Sprintf("Saving user %d:", u.Id))
 }
 

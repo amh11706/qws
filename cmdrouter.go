@@ -1,11 +1,13 @@
 package qws
 
 import (
+	"context"
+
 	"github.com/amh11706/logger"
 	"github.com/amh11706/qws/outcmds"
 )
 
-type CmdHandler func(c *UserConn, params []string) string
+type CmdHandler func(ctx context.Context, c *UserConn, params []string) string
 
 type Command struct {
 	Base    string     `json:"base"`
@@ -27,7 +29,7 @@ type CmdRouter struct {
 	LobbyAdmin []Command `json:"lobbyAdmin"`
 }
 
-func (r *CmdRouter) ServeWS(c *UserConn, m *RawMessage) {
+func (r *CmdRouter) ServeWS(ctx context.Context, c *UserConn, m *RawMessage) {
 	if len(m.Data) < 3 {
 		return
 	}
@@ -77,12 +79,12 @@ func (r *CmdRouter) ServeWS(c *UserConn, m *RawMessage) {
 		}
 	}
 
-	if res := match.Handler(c, params); len(res) > 0 {
+	if res := match.Handler(ctx, c, params); len(res) > 0 {
 		c.SendInfo(res)
 	}
 }
 
-func sendList(c *UserConn, _ []string) string {
+func sendList(ctx context.Context, c *UserConn, _ []string) string {
 	logger.Check(c.Send(outcmds.ChatMessage, &CommandMessage{Type: 6, Message: c.CmdRouter}))
 	return ""
 }

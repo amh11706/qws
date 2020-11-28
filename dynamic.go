@@ -1,6 +1,7 @@
 package qws
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"reflect"
@@ -12,10 +13,10 @@ type DynamicHandler struct {
 	f      reflect.Value
 }
 
-func (h *DynamicHandler) ServeWS(c *UserConn, m *RawMessage) {
+func (h *DynamicHandler) ServeWS(ctx context.Context, c *UserConn, m *RawMessage) {
 	var out []reflect.Value
 	if h.elType == nil {
-		out = h.f.Call([]reflect.Value{reflect.ValueOf(c)})
+		out = h.f.Call([]reflect.Value{reflect.ValueOf(ctx), reflect.ValueOf(c)})
 	} else {
 		i := reflect.New(h.elType).Interface()
 		err := json.Unmarshal(m.Data, i)
@@ -28,7 +29,7 @@ func (h *DynamicHandler) ServeWS(c *UserConn, m *RawMessage) {
 			)
 			return
 		}
-		out = h.f.Call([]reflect.Value{reflect.ValueOf(c), reflect.ValueOf(i).Elem()})
+		out = h.f.Call([]reflect.Value{reflect.ValueOf(ctx), reflect.ValueOf(c), reflect.ValueOf(i).Elem()})
 	}
 
 	if m.Id > 0 && len(out) > 0 {
@@ -45,8 +46,8 @@ func (h *DynamicHandler) ServeWS(c *UserConn, m *RawMessage) {
 func NewDynamicHandler(f interface{}) *DynamicHandler {
 	h := &DynamicHandler{f: reflect.ValueOf(f)}
 	t := h.f.Type()
-	if t.NumIn() > 1 {
-		h.elType = t.In(1)
+	if t.NumIn() > 2 {
+		h.elType = t.In(2)
 	}
 	return h
 }

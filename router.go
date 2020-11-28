@@ -1,6 +1,7 @@
 package qws
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"sync"
@@ -9,13 +10,13 @@ import (
 )
 
 type Handler interface {
-	ServeWS(*UserConn, *RawMessage)
+	ServeWS(context.Context, *UserConn, *RawMessage)
 }
 
-type HandlerFunc func(*UserConn, *RawMessage)
+type HandlerFunc func(context.Context, *UserConn, *RawMessage)
 
-func (f HandlerFunc) ServeWS(c *UserConn, m *RawMessage) {
-	f(c, m)
+func (f HandlerFunc) ServeWS(ctx context.Context, c *UserConn, m *RawMessage) {
+	f(ctx, c, m)
 }
 
 type Router struct {
@@ -23,7 +24,7 @@ type Router struct {
 	lock   sync.Mutex
 }
 
-func (r *Router) ServeWS(c *UserConn, m *RawMessage) {
+func (r *Router) ServeWS(ctx context.Context, c *UserConn, m *RawMessage) {
 	if r.routes == nil {
 		log.Println("No assigned handlers for user", c.User.Id)
 		return
@@ -36,7 +37,7 @@ func (r *Router) ServeWS(c *UserConn, m *RawMessage) {
 	}
 	if handler := r.routes[cmd]; handler != nil {
 		r.lock.Unlock()
-		handler.ServeWS(c, m)
+		handler.ServeWS(ctx, c, m)
 		if m.Id > 0 {
 			c.mutex.Lock()
 			_ = c.WriteJSON(Message{Id: m.Id})
@@ -49,7 +50,7 @@ func (r *Router) ServeWS(c *UserConn, m *RawMessage) {
 	}
 }
 
-func (r *Router) HandleFunc(command incmds.Cmd, h func(c *UserConn, m *RawMessage)) error {
+func (r *Router) HandleFunc(command incmds.Cmd, h HandlerFunc) error {
 	return r.Handle(command, HandlerFunc(h))
 }
 
@@ -69,7 +70,7 @@ func (r *Router) HandleDynamic(command incmds.Cmd, h interface{}) error {
 	return r.Handle(command, NewDynamicHandler(h))
 }
 
-func (r *Router) HandleReturning(command incmds.Cmd, h func(c *UserConn, m *RawMessage) interface{}) error {
+func (r *Router) HandleReturning(command incmds.Cmd, h func(ctx context.Context, c *UserConn, m *RawMessage) interface{}) error {
 	return r.Handle(command, ReturningFunc(h))
 }
 
