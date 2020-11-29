@@ -1,12 +1,13 @@
 package qws
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"sync"
 
 	"github.com/amh11706/logger"
 	"github.com/amh11706/qws/incmds"
+	"github.com/amh11706/qws/lock"
 	"github.com/amh11706/qws/outcmds"
 	"github.com/gorilla/websocket"
 )
@@ -30,7 +31,11 @@ type Info struct {
 
 type Conn struct {
 	*websocket.Conn
-	mutex sync.Mutex
+	mutex lock.Lock
+}
+
+func NewConn(conn *websocket.Conn) *Conn {
+	return &Conn{conn, lock.NewLock()}
 }
 
 type Setting struct {
@@ -57,11 +62,11 @@ func (c *UserConn) PrintName() string {
 	return fmt.Sprintf("%s(%d)", c.User.Name, c.Copy)
 }
 
-func (c *Conn) Send(cmd outcmds.Cmd, data interface{}) error {
+func (c *Conn) Send(ctx context.Context, cmd outcmds.Cmd, data interface{}) error {
 	if c == nil {
 		return nil
 	}
-	c.mutex.Lock()
+	c.mutex.Lock(ctx)
 	err := c.WriteJSON(Message{Cmd: cmd, Data: data})
 	c.mutex.Unlock()
 	if err != nil {
@@ -74,24 +79,24 @@ func NewInfo(m string) *Info {
 	return &Info{Message: m}
 }
 
-func (c *Conn) SendInfo(m string) {
-	logger.Check(c.Send(outcmds.ChatMessage, &Info{Message: m}))
+func (c *Conn) SendInfo(ctx context.Context, m string) {
+	logger.Check(c.Send(ctx, outcmds.ChatMessage, &Info{Message: m}))
 }
 
-func (c *Conn) WriteMessage(mType int, data []byte) error {
+func (c *Conn) WriteMessage(ctx context.Context, mType int, data []byte) error {
 	if c == nil {
 		return nil
 	}
-	c.mutex.Lock()
+	c.mutex.Lock(ctx)
 	defer c.mutex.Unlock()
 	return c.Conn.WriteMessage(mType, data)
 }
 
-func (c *Conn) SendPrepared(m *websocket.PreparedMessage) error {
+func (c *Conn) SendPrepared(ctx context.Context, m *websocket.PreparedMessage) error {
 	if c == nil {
 		return nil
 	}
-	c.mutex.Lock()
+	c.mutex.Lock(ctx)
 	defer c.mutex.Unlock()
 	return c.WritePreparedMessage(m)
 }

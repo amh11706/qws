@@ -47,7 +47,7 @@ func (r *CmdRouter) ServeWS(ctx context.Context, c *UserConn, m *RawMessage) {
 		input = nil
 	}
 	if cmd == "/" {
-		logger.Check(c.Send(outcmds.ChatMessage, &CommandMessage{Type: 6, Message: r}))
+		logger.Check(c.Send(ctx, outcmds.ChatMessage, &CommandMessage{Type: 6, Message: r}))
 		return
 	}
 
@@ -80,12 +80,12 @@ func (r *CmdRouter) ServeWS(ctx context.Context, c *UserConn, m *RawMessage) {
 	}
 
 	if res := match.Handler(ctx, c, params); len(res) > 0 {
-		c.SendInfo(res)
+		c.SendInfo(ctx, res)
 	}
 }
 
 func sendList(ctx context.Context, c *UserConn, _ []string) string {
-	logger.Check(c.Send(outcmds.ChatMessage, &CommandMessage{Type: 6, Message: c.CmdRouter}))
+	logger.Check(c.Send(ctx, outcmds.ChatMessage, &CommandMessage{Type: 6, Message: c.CmdRouter}))
 	return ""
 }
 

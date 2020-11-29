@@ -1,6 +1,7 @@
 package qws
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 
@@ -11,13 +12,13 @@ import (
 type UserList map[int64]*UserConn
 
 // Broadcast sends the provided message to every user in the list.
-func (l UserList) Broadcast(cmd outcmds.Cmd, data interface{}) error {
+func (l UserList) Broadcast(ctx context.Context, cmd outcmds.Cmd, data interface{}) error {
 	m, err := getPrepared(cmd, data)
 	if err != nil {
 		return err
 	}
 	for _, u := range l {
-		err = u.SendPrepared(m)
+		err = u.SendPrepared(ctx, m)
 		if err != nil {
 			log.Println(err)
 			u.Close()
@@ -28,15 +29,15 @@ func (l UserList) Broadcast(cmd outcmds.Cmd, data interface{}) error {
 
 // BroadcastExcept sends the provided message to every user in the list except
 // the provided user.
-func (l UserList) BroadcastExcept(cmd outcmds.Cmd, data interface{}, e *UserConn) error {
-	return l.BroadcastFilter(cmd, data, func(u *UserConn) bool {
+func (l UserList) BroadcastExcept(ctx context.Context, cmd outcmds.Cmd, data interface{}, e *UserConn) error {
+	return l.BroadcastFilter(ctx, cmd, data, func(u *UserConn) bool {
 		return u.SId != e.SId
 	})
 }
 
 // BroadcastFilter sends the provided message to every user in the list for which
 // the provided filter func returns true.
-func (l UserList) BroadcastFilter(cmd outcmds.Cmd, data interface{}, filter func(*UserConn) bool) error {
+func (l UserList) BroadcastFilter(ctx context.Context, cmd outcmds.Cmd, data interface{}, filter func(*UserConn) bool) error {
 	m, err := getPrepared(cmd, data)
 	if err != nil {
 		return err
@@ -45,7 +46,7 @@ func (l UserList) BroadcastFilter(cmd outcmds.Cmd, data interface{}, filter func
 		if !filter(u) {
 			continue
 		}
-		err = u.SendPrepared(m)
+		err = u.SendPrepared(ctx, m)
 		if err != nil {
 			log.Println(err)
 			u.Close()

@@ -42,6 +42,7 @@ func (u *User) MarshalJSON() ([]byte, error) {
 
 func (u *User) RemoveInvite(invite *Invitation) {
 	u.Lock.Lock()
+	defer u.Lock.Unlock()
 	newInvites := make([]*Invitation, 0, len(u.Invites)-1)
 	for _, inv := range u.Invites {
 		if inv != invite {
@@ -49,7 +50,6 @@ func (u *User) RemoveInvite(invite *Invitation) {
 		}
 	}
 	u.Invites = newInvites
-	u.Lock.Unlock()
 }
 
 func (u *User) SaveSeen(ctx context.Context) {
