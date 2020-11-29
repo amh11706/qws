@@ -66,7 +66,9 @@ func (c *Conn) Send(ctx context.Context, cmd outcmds.Cmd, data interface{}) erro
 	if c == nil {
 		return nil
 	}
-	c.mutex.Lock(ctx)
+	if err := c.mutex.Lock(ctx); err != nil {
+		return err
+	}
 	err := c.WriteJSON(Message{Cmd: cmd, Data: data})
 	c.mutex.Unlock()
 	if err != nil {
@@ -87,7 +89,9 @@ func (c *Conn) WriteMessage(ctx context.Context, mType int, data []byte) error {
 	if c == nil {
 		return nil
 	}
-	c.mutex.Lock(ctx)
+	if err := c.mutex.Lock(ctx); err != nil {
+		return err
+	}
 	defer c.mutex.Unlock()
 	return c.Conn.WriteMessage(mType, data)
 }
@@ -96,7 +100,9 @@ func (c *Conn) SendPrepared(ctx context.Context, m *websocket.PreparedMessage) e
 	if c == nil {
 		return nil
 	}
-	c.mutex.Lock(ctx)
+	if err := c.mutex.Lock(ctx); err != nil {
+		return err
+	}
 	defer c.mutex.Unlock()
 	return c.WritePreparedMessage(m)
 }

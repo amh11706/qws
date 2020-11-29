@@ -39,7 +39,7 @@ func (r *Router) ServeWS(ctx context.Context, c *UserConn, m *RawMessage) {
 		r.lock.Unlock()
 		handler.ServeWS(ctx, c, m)
 		if m.Id > 0 {
-			c.mutex.Lock(ctx)
+			c.mutex.MustLock(ctx)
 			_ = c.WriteJSON(Message{Id: m.Id})
 			c.mutex.Unlock()
 		}

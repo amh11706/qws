@@ -1,6 +1,9 @@
 package lock
 
-import "context"
+import (
+	"context"
+	"errors"
+)
 
 type Lock chan struct{}
 
@@ -10,13 +13,30 @@ func NewLock() Lock {
 	return l
 }
 
-func (l Lock) Lock(ctx context.Context) {
+var (
+	NilLock      = errors.New("Cannot lock nil lock")
+	CtxCancelled = errors.New("Failed to get lock: ctx cancelled")
+)
+
+func (l Lock) Lock(ctx context.Context) error {
 	if l == nil {
-		panic("Cannot lock nil lock")
+		return NilLock
 	}
 	select {
 	case <-ctx.Done():
-		panic("Failed to get lock: ctx cancelled")
+		return CtxCancelled
+	case <-l:
+		return nil
+	}
+}
+
+func (l Lock) MustLock(ctx context.Context) {
+	if l == nil {
+		panic(NilLock)
+	}
+	select {
+	case <-ctx.Done():
+		panic(CtxCancelled)
 	case <-l:
 		return
 	}
