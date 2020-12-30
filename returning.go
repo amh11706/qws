@@ -12,5 +12,6 @@ func (f ReturningFunc) ServeWS(ctx context.Context, c *UserConn, m *RawMessage) 
 	r := f(ctx, c, m)
 	c.mutex.MustLock(ctx)
 	_ = c.WriteJSON(Message{Id: m.Id, Data: r})
+	m.Id = 0
 	c.mutex.Unlock()
 }

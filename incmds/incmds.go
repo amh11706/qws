@@ -57,6 +57,7 @@ const (
 	TileSetGet
 	StructureSetGet
 	WeightSave
+	TMapSetGet
 
 	Sit
 	Kick

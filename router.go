@@ -6,6 +6,7 @@ import (
 	"log"
 	"sync"
 
+	"github.com/amh11706/logger"
 	"github.com/amh11706/qws/incmds"
 )
 
@@ -39,8 +40,10 @@ func (r *Router) ServeWS(ctx context.Context, c *UserConn, m *RawMessage) {
 		r.lock.Unlock()
 		handler.ServeWS(ctx, c, m)
 		if m.Id > 0 {
+			logger.Error("Sent missed return id for message:", m)
 			c.mutex.MustLock(ctx)
 			_ = c.WriteJSON(Message{Id: m.Id})
+			m.Id = 0
 			c.mutex.Unlock()
 		}
 	} else {
