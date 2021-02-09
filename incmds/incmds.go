@@ -28,6 +28,10 @@ const (
 
 	StatsUser
 	StatsTop
+
+	ChangeEmail
+	ChangePass
+	ChangeName
 )
 
 const (

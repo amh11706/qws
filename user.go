@@ -26,10 +26,10 @@ type User struct {
 	Name      qsql.LazyString `db:"username"`
 	Pass      qsql.LazyString `json:"password" db:"password"`
 	Inventory qsql.LazyInt    `db:"inventory"`
-	Email     qsql.LazyString `db:"email"`
+	Email     qsql.LazyString `json:"email" db:"email"`
 	AdminLvl  qsql.LazyInt    `db:"admin_level"`
 	Token     qsql.LazyString `db:"token"`
-	TokenSent qsql.LazyTime   `db:"token_sent"`
+	TokenSent qsql.LazyUnix   `db:"token_sent"`
 	Online    map[string]UserList
 	Blocked   map[string]struct{}
 	Invites   []*Invitation
