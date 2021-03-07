@@ -45,6 +45,7 @@ const (
 	Bomb
 	Ready
 	BoatTick
+	BoatTicks
 
 	Bidding
 	Playing

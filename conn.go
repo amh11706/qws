@@ -59,7 +59,10 @@ func (c *UserConn) PrintName() string {
 	if c.User == nil {
 		return ""
 	}
-	return fmt.Sprintf("%s(%d)", c.User.Name, c.Copy)
+	if c.Copy > 1 {
+		return fmt.Sprintf("%s(%d)", c.User.Name, c.Copy)
+	}
+	return string(c.User.Name)
 }
 
 func (c *Conn) Send(ctx context.Context, cmd outcmds.Cmd, data interface{}) error {
