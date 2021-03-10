@@ -78,6 +78,9 @@ func (r *Router) HandleReturning(command incmds.Cmd, h func(ctx context.Context,
 }
 
 func (r *Router) RemoveCommand(command incmds.Cmd) {
+	if r == nil {
+		return
+	}
 	r.lock.Lock()
 	delete(r.routes, command)
 	r.lock.Unlock()
