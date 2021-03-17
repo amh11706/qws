@@ -36,6 +36,7 @@ const (
 	ChangeEmail
 	ChangePass
 	ChangeName
+	SearchNames
 )
 
 const (
