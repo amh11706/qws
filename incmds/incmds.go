@@ -32,6 +32,7 @@ const (
 	RanksTop
 	MatchesUser
 	MatchData
+	MatchAi
 
 	ChangeEmail
 	ChangePass

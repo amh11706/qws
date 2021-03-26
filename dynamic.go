@@ -6,6 +6,8 @@ import (
 	"log"
 	"reflect"
 	"runtime"
+
+	"github.com/amh11706/logger"
 )
 
 type DynamicHandler struct {
@@ -20,7 +22,7 @@ func (h *DynamicHandler) ServeWS(ctx context.Context, c *UserConn, m *RawMessage
 	} else {
 		i := reflect.New(h.elType).Interface()
 		err := json.Unmarshal(m.Data, i)
-		if err != nil {
+		if logger.Check(err) {
 			f := runtime.FuncForPC(h.f.Pointer())
 			file, line := runtime.FuncForPC(h.f.Pointer()).FileLine(f.Entry())
 			log.Printf(
