@@ -31,7 +31,7 @@ type Info struct {
 
 type Conn struct {
 	*websocket.Conn
-	mutex lock.Lock
+	mutex *lock.Lock
 }
 
 func NewConn(conn *websocket.Conn) *Conn {

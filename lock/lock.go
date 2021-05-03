@@ -3,12 +3,20 @@ package lock
 import (
 	"context"
 	"errors"
+	"fmt"
+	"runtime/debug"
+	"time"
+
+	"github.com/amh11706/logger"
 )
 
-type Lock chan struct{}
+type Lock struct {
+	lock chan struct{}
+	ctx  context.Context
+}
 
-func NewLock() Lock {
-	l := make(Lock, 1)
+func NewLock() *Lock {
+	l := &Lock{lock: make(chan struct{}, 1)}
 	l.Unlock()
 	return l
 }
@@ -18,33 +26,45 @@ var (
 	CtxCancelled = errors.New("Failed to get lock: ctx cancelled")
 )
 
-func (l Lock) Lock(ctx context.Context) error {
+func (l *Lock) Lock(ctx context.Context) error {
 	if l == nil {
 		return NilLock
 	}
 	select {
 	case <-ctx.Done():
 		return CtxCancelled
-	case <-l:
+	case <-l.lock:
+		time.AfterFunc(5*time.Second, l.check(ctx, debug.Stack()))
 		return nil
 	}
 }
 
-func (l Lock) MustLock(ctx context.Context) {
-	if l == nil {
+func (l *Lock) check(ctx context.Context, stack []byte) func() {
+	return func() {
+		if l.ctx == ctx {
+			l.Unlock()
+			logger.CheckStack(fmt.Errorf("Released dead lock! %s", stack))
+		}
+	}
+}
+
+func (l *Lock) MustLock(ctx context.Context) {
+	if l == nil || l.lock == nil {
 		panic(NilLock)
 	}
 	select {
 	case <-ctx.Done():
 		panic(CtxCancelled)
-	case <-l:
+	case <-l.lock:
+		time.AfterFunc(5*time.Second, l.check(ctx, debug.Stack()))
 		return
 	}
 }
 
-func (l Lock) Unlock() {
-	if len(l) != 0 {
+func (l *Lock) Unlock() {
+	if len(l.lock) != 0 {
 		panic("Unlock on already unlocked lock")
 	}
-	l <- struct{}{}
+	l.ctx = nil
+	l.lock <- struct{}{}
 }

@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/amh11706/logger"
 	"github.com/amh11706/qdb"
 	"github.com/amh11706/qsql"
+	"github.com/amh11706/qws/lock"
 )
 
 var Users = qsql.NewTable(&qdb.DB, "users")
@@ -33,15 +33,15 @@ type User struct {
 	Online    map[string]UserList
 	Blocked   map[string]struct{}
 	Invites   []*Invitation
-	Lock      sync.Mutex
+	Lock      *lock.Lock
 }
 
 func (u *User) MarshalJSON() ([]byte, error) {
 	return json.Marshal(u.Name)
 }
 
-func (u *User) RemoveInvite(invite *Invitation) {
-	u.Lock.Lock()
+func (u *User) RemoveInvite(ctx context.Context, invite *Invitation) {
+	u.Lock.MustLock(ctx)
 	defer u.Lock.Unlock()
 	newInvites := make([]*Invitation, 0, len(u.Invites)-1)
 	for _, inv := range u.Invites {
