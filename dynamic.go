@@ -36,14 +36,14 @@ func (h *DynamicHandler) ServeWS(ctx context.Context, c *UserConn, m *RawMessage
 
 	if m.Id > 0 && len(out) > 0 {
 		c.mutex.MustLock(ctx)
+		defer c.mutex.Unlock()
 		_ = c.WriteJSON(Message{Id: m.Id, Data: out[0].Interface()})
 		m.Id = 0
-		c.mutex.Unlock()
 	} else if m.Id > 0 {
 		c.mutex.MustLock(ctx)
+		defer c.mutex.Unlock()
 		_ = c.WriteJSON(Message{Id: m.Id})
 		m.Id = 0
-		c.mutex.Unlock()
 	}
 }
 

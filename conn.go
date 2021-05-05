@@ -72,8 +72,8 @@ func (c *Conn) Send(ctx context.Context, cmd outcmds.Cmd, data interface{}) erro
 	if err := c.mutex.Lock(ctx); err != nil {
 		return err
 	}
+	defer c.mutex.Unlock()
 	err := c.WriteJSON(Message{Cmd: cmd, Data: data})
-	c.mutex.Unlock()
 	if err != nil {
 		c.Close()
 	}
