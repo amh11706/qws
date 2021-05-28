@@ -9,7 +9,21 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+type UserName struct {
+	From  string `json:"from"`
+	Copy  int64  `json:"copy"`
+	Admin int64  `json:"admin"`
+}
+
 type UserList map[int64]*UserConn
+
+func (l UserList) MarshalJSON() ([]byte, error) {
+	names := make([]UserName, 0, len(l))
+	for _, u := range l {
+		names = append(names, u.UserName())
+	}
+	return json.Marshal(names)
+}
 
 // Broadcast sends the provided message to every user in the list.
 func (l UserList) Broadcast(ctx context.Context, cmd outcmds.Cmd, data interface{}) error {

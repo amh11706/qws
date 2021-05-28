@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"runtime/debug"
 	"time"
 
 	"github.com/amh11706/logger"
@@ -34,16 +33,16 @@ func (l *Lock) Lock(ctx context.Context) error {
 	case <-ctx.Done():
 		return CtxCancelled
 	case <-l.lock:
-		time.AfterFunc(5*time.Second, l.check(ctx, debug.Stack()))
+		time.AfterFunc(5*time.Second, l.check(ctx))
 		return nil
 	}
 }
 
-func (l *Lock) check(ctx context.Context, stack []byte) func() {
+func (l *Lock) check(ctx context.Context) func() {
 	return func() {
 		if l.ctx == ctx {
 			l.Unlock()
-			logger.CheckStack(fmt.Errorf("Released dead lock! %s", stack))
+			logger.CheckStack(fmt.Errorf("Released dead lock!"))
 		}
 	}
 }
@@ -56,7 +55,7 @@ func (l *Lock) MustLock(ctx context.Context) {
 	case <-ctx.Done():
 		panic(CtxCancelled)
 	case <-l.lock:
-		time.AfterFunc(5*time.Second, l.check(ctx, debug.Stack()))
+		time.AfterFunc(5*time.Second, l.check(ctx))
 		return
 	}
 }

@@ -65,6 +65,10 @@ func (c *UserConn) PrintName() string {
 	return string(c.User.Name)
 }
 
+func (c *UserConn) UserName() UserName {
+	return UserName{From: string(c.User.Name), Copy: c.Copy, Admin: int64(c.User.AdminLvl)}
+}
+
 func (c *Conn) Send(ctx context.Context, cmd outcmds.Cmd, data interface{}) error {
 	if c == nil {
 		return nil
