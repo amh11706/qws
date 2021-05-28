@@ -17,6 +17,7 @@ var Users = qsql.NewTable(&qdb.DB, "users")
 
 type Invitation struct {
 	From   qsql.LazyString `json:"f"`
+	Admin  qsql.LazyInt    `json:"a"`
 	Type   byte            `json:"ty"`
 	Target int64           `json:"tg"`
 }
