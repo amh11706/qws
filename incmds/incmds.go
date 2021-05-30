@@ -75,4 +75,6 @@ const (
 	Bid
 	Card
 	DeclineBlind
+
+	ShuffleTeams
 )
