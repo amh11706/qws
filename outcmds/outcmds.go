@@ -24,6 +24,8 @@ const (
 	InventoryOpen
 	InventoryCoin
 	InventoryUpdate
+
+	ChatCommands
 )
 
 const (
