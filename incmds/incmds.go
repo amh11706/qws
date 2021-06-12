@@ -38,6 +38,7 @@ const (
 	ChangePass
 	ChangeName
 	SearchNames
+	SearchNamesOnline
 )
 
 const (
