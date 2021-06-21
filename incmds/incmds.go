@@ -78,4 +78,5 @@ const (
 	DeclineBlind
 
 	ShuffleTeams
+	RateMap
 )
