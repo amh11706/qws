@@ -2,6 +2,7 @@ package qws
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/amh11706/logger"
 	"github.com/amh11706/qws/outcmds"
@@ -33,18 +34,19 @@ func (r *CmdRouter) ServeWS(ctx context.Context, c *UserConn, m *RawMessage) {
 	if len(m.Data) < 3 {
 		return
 	}
-	input := []byte(m.Data[1 : len(m.Data)-1])
+	var input string
+	logger.CheckP(json.Unmarshal(m.Data, &input), "Command unmarshal:")
 	cmd := ""
 	for cursor := 1; cursor < len(input); cursor++ {
 		if input[cursor] == ' ' {
-			cmd = string(input[:cursor])
+			cmd = input[:cursor]
 			input = input[cursor+1:]
 			break
 		}
 	}
 	if cmd == "" {
 		cmd = string(input)
-		input = nil
+		input = ""
 	}
 	if cmd == "/" {
 		logger.Check(c.Send(ctx, outcmds.ChatMessage, &CommandMessage{Type: 6, Message: r}))
