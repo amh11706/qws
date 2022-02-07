@@ -58,6 +58,7 @@ const (
 	SpawnSide
 	Team
 	WantMove
+	WantManeuver
 	Sync
 
 	MapListAll
