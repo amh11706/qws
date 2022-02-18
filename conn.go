@@ -7,9 +7,9 @@ import (
 
 	"github.com/amh11706/logger"
 	"github.com/amh11706/qws/incmds"
-	"github.com/amh11706/qws/lock"
 	"github.com/amh11706/qws/outcmds"
-	"github.com/gorilla/websocket"
+	"nhooyr.io/websocket"
+	"nhooyr.io/websocket/wsjson"
 )
 
 type RawMessage struct {
@@ -31,11 +31,10 @@ type Info struct {
 
 type Conn struct {
 	*websocket.Conn
-	mutex *lock.Lock
 }
 
 func NewConn(conn *websocket.Conn) *Conn {
-	return &Conn{conn, lock.NewLock()}
+	return &Conn{conn}
 }
 
 type Setting struct {
@@ -73,13 +72,20 @@ func (c *Conn) Send(ctx context.Context, cmd outcmds.Cmd, data interface{}) erro
 	if c == nil {
 		return nil
 	}
-	if err := c.mutex.Lock(ctx); err != nil {
-		return err
-	}
-	defer c.mutex.Unlock()
-	err := c.WriteJSON(Message{Cmd: cmd, Data: data})
+	err := wsjson.Write(ctx, c.Conn, Message{Cmd: cmd, Data: data})
 	if err != nil {
-		c.Close()
+		c.Close(websocket.StatusAbnormalClosure, "Failed to write message.")
+	}
+	return err
+}
+
+func (c *Conn) SendMessage(ctx context.Context, m *Message) error {
+	if c == nil {
+		return nil
+	}
+	err := wsjson.Write(ctx, c.Conn, m)
+	if err != nil {
+		c.Close(websocket.StatusAbnormalClosure, "Failed to write message.")
 	}
 	return err
 }
@@ -90,26 +96,4 @@ func NewInfo(m string) *Info {
 
 func (c *Conn) SendInfo(ctx context.Context, m string) {
 	logger.Check(c.Send(ctx, outcmds.ChatMessage, &Info{Message: m}))
-}
-
-func (c *Conn) WriteMessage(ctx context.Context, mType int, data []byte) error {
-	if c == nil {
-		return nil
-	}
-	if err := c.mutex.Lock(ctx); err != nil {
-		return err
-	}
-	defer c.mutex.Unlock()
-	return c.Conn.WriteMessage(mType, data)
-}
-
-func (c *Conn) SendPrepared(ctx context.Context, m *websocket.PreparedMessage) error {
-	if c == nil {
-		return nil
-	}
-	if err := c.mutex.Lock(ctx); err != nil {
-		return err
-	}
-	defer c.mutex.Unlock()
-	return c.WritePreparedMessage(m)
 }

@@ -1,6 +1,10 @@
 package qws
 
-import "context"
+import (
+	"context"
+
+	"nhooyr.io/websocket/wsjson"
+)
 
 type ReturningFunc func(ctx context.Context, c *UserConn, m *RawMessage) interface{}
 
@@ -10,8 +14,6 @@ func (f ReturningFunc) ServeWS(ctx context.Context, c *UserConn, m *RawMessage) 
 		return
 	}
 	r := f(ctx, c, m)
-	c.mutex.MustLock(ctx)
-	defer c.mutex.Unlock()
-	_ = c.WriteJSON(Message{Id: m.Id, Data: r})
+	_ = wsjson.Write(ctx, c.Conn.Conn, Message{Id: m.Id, Data: r})
 	m.Id = 0
 }

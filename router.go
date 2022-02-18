@@ -8,6 +8,7 @@ import (
 
 	"github.com/amh11706/logger"
 	"github.com/amh11706/qws/incmds"
+	"nhooyr.io/websocket/wsjson"
 )
 
 type Handler interface {
@@ -41,9 +42,7 @@ func (r *Router) ServeWS(ctx context.Context, c *UserConn, m *RawMessage) {
 		handler.ServeWS(ctx, c, m)
 		if m.Id > 0 {
 			logger.Error("Sent missed return id for message:", m)
-			c.mutex.MustLock(ctx)
-			defer c.mutex.Unlock()
-			_ = c.WriteJSON(Message{Id: m.Id})
+			_ = wsjson.Write(ctx, c.Conn.Conn, Message{Id: m.Id})
 			m.Id = 0
 		}
 	} else {
