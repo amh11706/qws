@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/amh11706/logger"
 	"github.com/amh11706/qws/incmds"
@@ -68,26 +69,34 @@ func (c *UserConn) UserName() UserName {
 	return UserName{From: string(c.User.Name), Copy: c.Copy, Admin: int64(c.User.AdminLvl)}
 }
 
-func (c *Conn) Send(ctx context.Context, cmd outcmds.Cmd, data interface{}) error {
+func (c *Conn) Send(ctx context.Context, cmd outcmds.Cmd, data interface{}) {
 	if c == nil {
-		return nil
+		return
 	}
-	err := wsjson.Write(ctx, c.Conn, Message{Cmd: cmd, Data: data})
-	if err != nil {
-		c.Close(websocket.StatusAbnormalClosure, "Failed to write message.")
-	}
-	return err
+	go c.send(cmd, data)
 }
 
-func (c *Conn) SendMessage(ctx context.Context, m *Message) error {
-	if c == nil {
-		return nil
-	}
-	err := wsjson.Write(ctx, c.Conn, m)
-	if err != nil {
+func (c *Conn) send(cmd outcmds.Cmd, data interface{}) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	if logger.Check(wsjson.Write(ctx, c.Conn, Message{Cmd: cmd, Data: data})) {
 		c.Close(websocket.StatusAbnormalClosure, "Failed to write message.")
 	}
-	return err
+}
+
+func (c *Conn) SendMessage(ctx context.Context, m *Message) {
+	if c == nil {
+		return
+	}
+	go c.sendMessage(m)
+}
+
+func (c *Conn) sendMessage(m *Message) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	if logger.Check(wsjson.Write(ctx, c.Conn, m)) {
+		c.Close(websocket.StatusAbnormalClosure, "Failed to write message.")
+	}
 }
 
 func NewInfo(m string) *Info {
@@ -95,5 +104,5 @@ func NewInfo(m string) *Info {
 }
 
 func (c *Conn) SendInfo(ctx context.Context, m string) {
-	logger.Check(c.Send(ctx, outcmds.ChatMessage, &Info{Message: m}))
+	c.Send(ctx, outcmds.ChatMessage, &Info{Message: m})
 }

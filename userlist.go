@@ -4,9 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/amh11706/logger"
 	"github.com/amh11706/qws/outcmds"
-	"nhooyr.io/websocket"
 )
 
 type UserName struct {
@@ -29,9 +27,7 @@ func (l UserList) MarshalJSON() ([]byte, error) {
 func (l UserList) Broadcast(ctx context.Context, cmd outcmds.Cmd, data interface{}) error {
 	m := &Message{Cmd: cmd, Data: data}
 	for _, u := range l {
-		if logger.Check(u.SendMessage(ctx, m)) {
-			u.Close(websocket.StatusAbnormalClosure, "Broadcast message failed.")
-		}
+		u.SendMessage(ctx, m)
 	}
 	return nil
 }
@@ -49,11 +45,8 @@ func (l UserList) BroadcastExcept(ctx context.Context, cmd outcmds.Cmd, data int
 func (l UserList) BroadcastFilter(ctx context.Context, cmd outcmds.Cmd, data interface{}, filter func(*UserConn) bool) error {
 	m := &Message{Cmd: cmd, Data: data}
 	for _, u := range l {
-		if !filter(u) {
-			continue
-		}
-		if logger.Check(u.SendMessage(ctx, m)) {
-			u.Close(websocket.StatusAbnormalClosure, "Broadcast message failed.")
+		if filter(u) {
+			u.SendMessage(ctx, m)
 		}
 	}
 	return nil
