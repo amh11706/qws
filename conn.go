@@ -3,7 +3,9 @@ package qws
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/amh11706/logger"
@@ -31,11 +33,16 @@ type Info struct {
 }
 
 type Conn struct {
-	*websocket.Conn
+	conn     *websocket.Conn
+	sendChan chan *Message
+	closed   bool
 }
 
-func NewConn(conn *websocket.Conn) *Conn {
-	return &Conn{conn}
+func NewConn(ctx context.Context, conn *websocket.Conn) *Conn {
+	c := &Conn{conn: conn, sendChan: make(chan *Message, 50)}
+	go c.keepAlive(ctx, 10*time.Second)
+	go c.listenSend(ctx)
+	return c
 }
 
 type Setting struct {
@@ -69,33 +76,45 @@ func (c *UserConn) UserName() UserName {
 	return UserName{From: string(c.User.Name), Copy: c.Copy, Admin: int64(c.User.AdminLvl)}
 }
 
-func (c *Conn) Send(ctx context.Context, cmd outcmds.Cmd, data interface{}) {
-	if c == nil {
-		return
-	}
-	go c.send(cmd, data)
+func (c *Conn) Close(reason string) {
+	c.conn.Close(websocket.StatusInternalError, reason)
+	c.closed = true
 }
 
-func (c *Conn) send(cmd outcmds.Cmd, data interface{}) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-	if logger.Check(wsjson.Write(ctx, c.Conn, Message{Cmd: cmd, Data: data})) {
-		c.Close(websocket.StatusAbnormalClosure, "Failed to write message.")
-	}
+func (c *Conn) Send(ctx context.Context, cmd outcmds.Cmd, data interface{}) {
+	c.SendMessage(ctx, &Message{Cmd: cmd, Data: data})
+}
+
+func (c *Conn) SendSync(ctx context.Context, cmd outcmds.Cmd, data interface{}) {
+	c.SendMessageSync(ctx, &Message{Cmd: cmd, Data: data})
 }
 
 func (c *Conn) SendMessage(ctx context.Context, m *Message) {
-	if c == nil {
+	if c == nil || c.closed {
 		return
 	}
-	go c.sendMessage(m)
+	if len(c.sendChan) == cap(c.sendChan) {
+		logger.CheckStack(errors.New("sendChan is full."))
+		c.Close("Too many pending messages.")
+	} else {
+		c.sendChan <- m
+	}
 }
 
-func (c *Conn) sendMessage(m *Message) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-	if logger.Check(wsjson.Write(ctx, c.Conn, m)) {
-		c.Close(websocket.StatusAbnormalClosure, "Failed to write message.")
+func (c *Conn) SendMessageSync(ctx context.Context, m *Message) {
+	if c == nil || c.closed {
+		return
+	}
+	if !c.closed && logger.Check(wsjson.Write(ctx, c.conn, m)) {
+		c.conn.Close(websocket.StatusAbnormalClosure, "Failed to write message.")
+	}
+}
+
+func (c *Conn) listenSend(ctx context.Context) {
+	for m := range c.sendChan {
+		if !c.closed && logger.Check(wsjson.Write(ctx, c.conn, m)) {
+			c.conn.Close(websocket.StatusAbnormalClosure, "Failed to write message.")
+		}
 	}
 }
 
@@ -105,4 +124,27 @@ func NewInfo(m string) *Info {
 
 func (c *Conn) SendInfo(ctx context.Context, m string) {
 	c.Send(ctx, outcmds.ChatMessage, &Info{Message: m})
+}
+
+func (c *Conn) keepAlive(ctx context.Context, timeout time.Duration) {
+	done := ctx.Done()
+	for {
+		select {
+		case <-done:
+			return
+		case <-time.After(timeout):
+			break
+		}
+
+		ctx, cancel := context.WithTimeout(ctx, timeout)
+		err := c.conn.Ping(ctx)
+		cancel()
+		if err != nil {
+			c.Close("Missed ping.")
+			if err.Error() != "websocket: close sent" {
+				log.Println("Connection closed for ping error:", err)
+			}
+			return
+		}
+	}
 }

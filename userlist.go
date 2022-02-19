@@ -24,30 +24,28 @@ func (l UserList) MarshalJSON() ([]byte, error) {
 }
 
 // Broadcast sends the provided message to every user in the list.
-func (l UserList) Broadcast(ctx context.Context, cmd outcmds.Cmd, data interface{}) error {
+func (l UserList) Broadcast(ctx context.Context, cmd outcmds.Cmd, data interface{}) {
 	m := &Message{Cmd: cmd, Data: data}
 	for _, u := range l {
 		u.SendMessage(ctx, m)
 	}
-	return nil
 }
 
 // BroadcastExcept sends the provided message to every user in the list except
 // the provided user.
-func (l UserList) BroadcastExcept(ctx context.Context, cmd outcmds.Cmd, data interface{}, e *UserConn) error {
-	return l.BroadcastFilter(ctx, cmd, data, func(u *UserConn) bool {
+func (l UserList) BroadcastExcept(ctx context.Context, cmd outcmds.Cmd, data interface{}, e *UserConn) {
+	l.BroadcastFilter(ctx, cmd, data, func(u *UserConn) bool {
 		return u.SId != e.SId
 	})
 }
 
 // BroadcastFilter sends the provided message to every user in the list for which
 // the provided filter func returns true.
-func (l UserList) BroadcastFilter(ctx context.Context, cmd outcmds.Cmd, data interface{}, filter func(*UserConn) bool) error {
+func (l UserList) BroadcastFilter(ctx context.Context, cmd outcmds.Cmd, data interface{}, filter func(*UserConn) bool) {
 	m := &Message{Cmd: cmd, Data: data}
 	for _, u := range l {
 		if filter(u) {
 			u.SendMessage(ctx, m)
 		}
 	}
-	return nil
 }

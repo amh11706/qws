@@ -42,7 +42,7 @@ func (r *Router) ServeWS(ctx context.Context, c *UserConn, m *RawMessage) {
 		handler.ServeWS(ctx, c, m)
 		if m.Id > 0 {
 			logger.Error("Sent missed return id for message:", m)
-			_ = wsjson.Write(ctx, c.Conn.Conn, Message{Id: m.Id})
+			_ = wsjson.Write(ctx, c.Conn.conn, Message{Id: m.Id})
 			m.Id = 0
 		}
 	} else {

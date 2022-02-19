@@ -14,6 +14,6 @@ func (f ReturningFunc) ServeWS(ctx context.Context, c *UserConn, m *RawMessage) 
 		return
 	}
 	r := f(ctx, c, m)
-	_ = wsjson.Write(ctx, c.Conn.Conn, Message{Id: m.Id, Data: r})
+	_ = wsjson.Write(ctx, c.Conn.conn, Message{Id: m.Id, Data: r})
 	m.Id = 0
 }
