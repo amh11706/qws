@@ -8,7 +8,6 @@ import (
 	"runtime"
 
 	"github.com/amh11706/logger"
-	"nhooyr.io/websocket/wsjson"
 )
 
 type DynamicHandler struct {
@@ -36,10 +35,10 @@ func (h *DynamicHandler) ServeWS(ctx context.Context, c *UserConn, m *RawMessage
 	}
 
 	if m.Id > 0 && len(out) > 0 {
-		_ = wsjson.Write(ctx, c.Conn.conn, Message{Id: m.Id, Data: out[0].Interface()})
+		c.Conn.SendMessage(ctx, &Message{Id: m.Id, Data: out[0].Interface()})
 		m.Id = 0
 	} else if m.Id > 0 {
-		_ = wsjson.Write(ctx, c.Conn.conn, Message{Id: m.Id})
+		c.Conn.SendMessage(ctx, &Message{Id: m.Id})
 		m.Id = 0
 	}
 }

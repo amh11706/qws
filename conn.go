@@ -11,8 +11,7 @@ import (
 	"github.com/amh11706/logger"
 	"github.com/amh11706/qws/incmds"
 	"github.com/amh11706/qws/outcmds"
-	"nhooyr.io/websocket"
-	"nhooyr.io/websocket/wsjson"
+	"github.com/gorilla/websocket"
 )
 
 type RawMessage struct {
@@ -76,8 +75,8 @@ func (c *UserConn) UserName() UserName {
 	return UserName{From: string(c.User.Name), Copy: c.Copy, Admin: int64(c.User.AdminLvl)}
 }
 
-func (c *Conn) Close(reason string) {
-	c.conn.Close(websocket.StatusInternalError, reason)
+func (c *Conn) Close() {
+	c.conn.Close()
 	c.closed = true
 }
 
@@ -95,7 +94,7 @@ func (c *Conn) SendMessage(ctx context.Context, m *Message) {
 	}
 	if len(c.sendChan) == cap(c.sendChan) {
 		logger.CheckStack(errors.New("sendChan is full."))
-		c.Close("Too many pending messages.")
+		c.Close()
 	} else {
 		c.sendChan <- m
 	}
@@ -105,15 +104,15 @@ func (c *Conn) SendMessageSync(ctx context.Context, m *Message) {
 	if c == nil || c.closed {
 		return
 	}
-	if !c.closed && logger.Check(wsjson.Write(ctx, c.conn, m)) {
-		c.conn.Close(websocket.StatusAbnormalClosure, "Failed to write message.")
+	if !c.closed && logger.Check(c.conn.WriteJSON(m)) {
+		c.Close()
 	}
 }
 
 func (c *Conn) listenSend(ctx context.Context) {
 	for m := range c.sendChan {
-		if !c.closed && logger.Check(wsjson.Write(ctx, c.conn, m)) {
-			c.conn.Close(websocket.StatusAbnormalClosure, "Failed to write message.")
+		if !c.closed && logger.Check(c.conn.WriteJSON(m)) {
+			c.Close()
 		}
 	}
 }
@@ -127,24 +126,35 @@ func (c *Conn) SendInfo(ctx context.Context, m string) {
 }
 
 func (c *Conn) keepAlive(ctx context.Context, timeout time.Duration) {
-	done := ctx.Done()
-	for {
-		select {
-		case <-done:
-			return
-		case <-time.After(timeout):
-			break
-		}
+	lastResponse := time.Now()
+	c.conn.SetPongHandler(func(msg string) error {
+		lastResponse = time.Now()
+		return nil
+	})
 
-		ctx, cancel := context.WithTimeout(ctx, timeout)
-		err := c.conn.Ping(ctx)
-		cancel()
-		if err != nil {
-			c.Close("Missed ping.")
-			if err.Error() != "websocket: close sent" {
-				log.Println("Connection closed for ping error:", err)
+	go func() {
+		done := ctx.Done()
+		for {
+			if time.Since(lastResponse) > timeout {
+				log.Println("Connection closed for missed pong")
+				c.Close()
+				return
 			}
-			return
+			select {
+			case <-done:
+				return
+			case <-time.After(timeout / 2):
+				break
+			}
+
+			err := c.conn.WriteMessage(websocket.PingMessage, []byte("keepalive"))
+			if err != nil {
+				c.Close()
+				if err.Error() != "websocket: close sent" {
+					log.Println("Connection closed for ping error:", err)
+				}
+				return
+			}
 		}
-	}
+	}()
 }
