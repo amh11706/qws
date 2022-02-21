@@ -39,8 +39,7 @@ type Conn struct {
 
 func NewConn(ctx context.Context, conn *websocket.Conn) *Conn {
 	c := &Conn{conn: conn, sendChan: make(chan *Message, 50)}
-	go c.keepAlive(ctx, 10*time.Second)
-	go c.listenSend(ctx)
+	go c.listen(ctx, 10*time.Second)
 	return c
 }
 
@@ -109,14 +108,6 @@ func (c *Conn) SendMessageSync(ctx context.Context, m *Message) {
 	}
 }
 
-func (c *Conn) listenSend(ctx context.Context) {
-	for m := range c.sendChan {
-		if !c.closed && logger.Check(c.conn.WriteJSON(m)) {
-			c.Close()
-		}
-	}
-}
-
 func NewInfo(m string) *Info {
 	return &Info{Message: m}
 }
@@ -125,36 +116,41 @@ func (c *Conn) SendInfo(ctx context.Context, m string) {
 	c.Send(ctx, outcmds.ChatMessage, &Info{Message: m})
 }
 
-func (c *Conn) keepAlive(ctx context.Context, timeout time.Duration) {
+func (c *Conn) listen(ctx context.Context, timeout time.Duration) {
 	lastResponse := time.Now()
 	c.conn.SetPongHandler(func(msg string) error {
 		lastResponse = time.Now()
 		return nil
 	})
 
-	go func() {
-		done := ctx.Done()
-		for {
-			if time.Since(lastResponse) > timeout {
-				log.Println("Connection closed for missed pong")
-				c.Close()
-				return
-			}
-			select {
-			case <-done:
-				return
-			case <-time.After(timeout / 2):
-				break
-			}
-
-			err := c.conn.WriteMessage(websocket.PingMessage, []byte("keepalive"))
-			if err != nil {
-				c.Close()
-				if err.Error() != "websocket: close sent" {
-					log.Println("Connection closed for ping error:", err)
-				}
-				return
-			}
+	done := ctx.Done()
+	timer := time.After(timeout / 2)
+	for {
+		if time.Since(lastResponse) > timeout {
+			log.Println("Connection closed for missed pong")
+			c.Close()
+			return
 		}
-	}()
+		select {
+		case <-timer:
+			break
+		case m := <-c.sendChan:
+			if !c.closed && logger.Check(c.conn.WriteJSON(m)) {
+				c.Close()
+			}
+			continue
+		case <-done:
+			return
+		}
+
+		err := c.conn.WriteMessage(websocket.PingMessage, []byte("keepalive"))
+		if err != nil {
+			c.Close()
+			if err.Error() != "websocket: close sent" {
+				log.Println("Connection closed for ping error:", err)
+			}
+			return
+		}
+		timer = time.After(timeout / 2)
+	}
 }
