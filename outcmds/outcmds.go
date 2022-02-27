@@ -26,6 +26,7 @@ const (
 	InventoryUpdate
 
 	ChatCommands
+	Reload
 )
 
 const (
