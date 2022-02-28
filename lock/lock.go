@@ -34,6 +34,7 @@ func (l *Lock) Lock(ctx context.Context) error {
 		return CtxCancelled
 	case <-l.lock:
 		time.AfterFunc(5*time.Second, l.check(ctx))
+		l.ctx = ctx
 		return nil
 	}
 }
@@ -56,6 +57,7 @@ func (l *Lock) MustLock(ctx context.Context) {
 		panic(CtxCancelled)
 	case <-l.lock:
 		time.AfterFunc(5*time.Second, l.check(ctx))
+		l.ctx = ctx
 		return
 	}
 }
