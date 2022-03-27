@@ -40,8 +40,11 @@ type Conn struct {
 
 func NewConn(ctx context.Context, conn *websocket.Conn) *Conn {
 	c := &Conn{conn: conn, sendChan: make(chan *Message, 50)}
-	go c.listenWrite(ctx, 10*time.Second)
 	return c
+}
+
+func (c *Conn) ListenWrite(ctx context.Context) {
+	go c.listenWrite(ctx, 10*time.Second)
 }
 
 type Setting struct {
@@ -181,7 +184,8 @@ func (uConn *UserConn) ListenRead(ctx context.Context) {
 	for {
 		m := &RawMessage{}
 		err := uConn.conn.ReadJSON(m)
-		if err != nil && err.(*websocket.CloseError).Code == websocket.CloseGoingAway {
+		wsErr, ok := err.(*websocket.CloseError)
+		if ok && wsErr.Code == websocket.CloseGoingAway {
 			return
 		}
 		if logger.Check(err) {
