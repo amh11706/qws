@@ -33,6 +33,7 @@ const (
 	MatchesUser
 	MatchData
 	MatchAi
+	MatchScore
 
 	ChangeEmail
 	ChangePass
