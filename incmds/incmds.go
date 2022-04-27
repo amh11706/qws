@@ -82,4 +82,5 @@ const (
 	ShuffleTeams
 	RateMap
 	SetMapData
+	SetMyJobbers
 )
