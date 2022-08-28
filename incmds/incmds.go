@@ -34,6 +34,7 @@ const (
 	MatchData
 	MatchAi
 	MatchScore
+	MatchTraining
 
 	ChangeEmail
 	ChangePass
