@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 
 	"github.com/amh11706/logger"
-	"github.com/amh11706/qws/outcmds"
 )
 
 type CmdHandler func(ctx context.Context, c *UserConn, params []string) string
@@ -31,7 +30,7 @@ type CmdRouter struct {
 }
 
 func (r *CmdRouter) ServeWS(ctx context.Context, c *UserConn, m *RawMessage) {
-	if len(m.Data) < 3 {
+	if len(m.Data) < 1 {
 		return
 	}
 	var input string
@@ -47,10 +46,6 @@ func (r *CmdRouter) ServeWS(ctx context.Context, c *UserConn, m *RawMessage) {
 	if cmd == "" {
 		cmd = string(input)
 		input = ""
-	}
-	if cmd == "/" {
-		c.Send(ctx, outcmds.ChatMessage, &CommandMessage{Type: 6, Message: r})
-		return
 	}
 
 	match := r.findHandler(cmd)
@@ -87,8 +82,7 @@ func (r *CmdRouter) ServeWS(ctx context.Context, c *UserConn, m *RawMessage) {
 }
 
 func sendList(ctx context.Context, c *UserConn, _ []string) string {
-	c.Send(ctx, outcmds.ChatMessage, &CommandMessage{Type: 6, Message: c.CmdRouter})
-	return ""
+	return "Unknown command. See the list to the left of the input box for valid commands."
 }
 
 func (r *CmdRouter) findHandler(cmd string) Command {
