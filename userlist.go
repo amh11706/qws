@@ -42,7 +42,7 @@ func (l UserList) BroadcastExcept(ctx context.Context, cmd outcmds.Cmd, data int
 // BroadcastFilter sends the provided message to every user in the list for which
 // the provided filter func returns true.
 func (l UserList) BroadcastFilter(ctx context.Context, cmd outcmds.Cmd, data interface{}, filter func(*UserConn) bool) {
-	m := &Message{Cmd: cmd, Data: data}
+	m := qws.PrepareJsonMessage(cmd, data)
 	for _, u := range l {
 		if filter(u) {
 			u.SendMessage(ctx, m)

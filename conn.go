@@ -34,12 +34,12 @@ type Info struct {
 
 type Conn struct {
 	conn     *websocket.Conn
-	sendChan chan *Message
+	sendChan chan *websocket.PreparedMessage
 	closed   bool
 }
 
 func NewConn(ctx context.Context, conn *websocket.Conn) *Conn {
-	c := &Conn{conn: conn, sendChan: make(chan *Message, 50)}
+	c := &Conn{conn: conn, sendChan: make(chan *websocket.PreparedMessage, 50)}
 	return c
 }
 
@@ -144,14 +144,27 @@ func (c *Conn) Close() {
 }
 
 func (c *Conn) Send(ctx context.Context, cmd outcmds.Cmd, data interface{}) {
-	c.SendMessage(ctx, &Message{Cmd: cmd, Data: data})
+	m, err := PrepareJsonMessage(cmd, data)
+	if logger.Check(err) {
+		return
+	}
+	c.SendMessage(ctx, m)
 }
 
 func (c *Conn) SendSync(ctx context.Context, cmd outcmds.Cmd, data interface{}) {
 	c.SendMessageSync(ctx, &Message{Cmd: cmd, Data: data})
 }
 
-func (c *Conn) SendMessage(ctx context.Context, m *Message) {
+func PrepareJsonMessage(cmd outcmds.Cmd, data interface{}) (*websocket.PreparedMessage, error) {
+	m := &Message{Cmd: cmd, Data: data}
+	b, err := json.Marshal(m)
+	if err != nil {
+		return nil, err
+	}
+	return websocket.NewPreparedMessage(websocket.TextMessage, b)
+}
+
+func (c *Conn) SendMessage(ctx context.Context, m *websocket.PreparedMessage) {
 	if c == nil || c.closed {
 		return
 	}
@@ -228,7 +241,7 @@ func (c *Conn) listenWrite(ctx context.Context, timeout time.Duration) {
 		case <-timer:
 			break
 		case m := <-c.sendChan:
-			if !c.closed && logger.Check(c.conn.WriteJSON(m)) {
+			if !c.closed && logger.Check(c.conn.WritePreparedMessage(m)) {
 				c.Close()
 			}
 			continue
