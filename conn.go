@@ -164,6 +164,18 @@ func PrepareJsonMessage(cmd outcmds.Cmd, data interface{}) (*websocket.PreparedM
 	return websocket.NewPreparedMessage(websocket.TextMessage, b)
 }
 
+func (c *Conn) SendRaw(ctx context.Context, data interface{}) {
+	b, err := json.Marshal(data)
+	if logger.Check(err) {
+		return
+	}
+	m, err := websocket.NewPreparedMessage(websocket.TextMessage, b)
+	if logger.Check(err) {
+		return
+	}
+	c.SendMessage(ctx, m)
+}
+
 func (c *Conn) SendMessage(ctx context.Context, m *websocket.PreparedMessage) {
 	if c == nil || c.closed {
 		return

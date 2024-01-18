@@ -12,6 +12,6 @@ func (f ReturningFunc) ServeWS(ctx context.Context, c *UserConn, m *RawMessage) 
 		return
 	}
 	r := f(ctx, c, m)
-	c.Conn.SendMessage(ctx, &Message{Id: m.Id, Data: r})
+	c.Conn.SendRaw(ctx, &Message{Id: m.Id, Data: r})
 	m.Id = 0
 }

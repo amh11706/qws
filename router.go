@@ -41,7 +41,7 @@ func (r *Router) ServeWS(ctx context.Context, c *UserConn, m *RawMessage) {
 		handler.ServeWS(ctx, c, m)
 		if m.Id > 0 {
 			logger.Error("Sent missed return id for message:", m)
-			c.Conn.SendMessage(ctx, &Message{Id: m.Id})
+			c.Conn.SendRaw(ctx, &Message{Id: m.Id})
 			m.Id = 0
 		}
 	} else {

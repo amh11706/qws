@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/amh11706/logger"
 	"github.com/amh11706/qws/outcmds"
 )
 
@@ -25,7 +26,10 @@ func (l UserList) MarshalJSON() ([]byte, error) {
 
 // Broadcast sends the provided message to every user in the list.
 func (l UserList) Broadcast(ctx context.Context, cmd outcmds.Cmd, data interface{}) {
-	m := &Message{Cmd: cmd, Data: data}
+	m, err := PrepareJsonMessage(cmd, data)
+	if logger.Check(err) {
+		return
+	}
 	for _, u := range l {
 		u.SendMessage(ctx, m)
 	}
@@ -42,7 +46,10 @@ func (l UserList) BroadcastExcept(ctx context.Context, cmd outcmds.Cmd, data int
 // BroadcastFilter sends the provided message to every user in the list for which
 // the provided filter func returns true.
 func (l UserList) BroadcastFilter(ctx context.Context, cmd outcmds.Cmd, data interface{}, filter func(*UserConn) bool) {
-	m := qws.PrepareJsonMessage(cmd, data)
+	m, err := PrepareJsonMessage(cmd, data)
+	if logger.Check(err) {
+		return
+	}
 	for _, u := range l {
 		if filter(u) {
 			u.SendMessage(ctx, m)

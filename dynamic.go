@@ -35,10 +35,10 @@ func (h *DynamicHandler) ServeWS(ctx context.Context, c *UserConn, m *RawMessage
 	}
 
 	if m.Id > 0 && len(out) > 0 {
-		c.Conn.SendMessage(ctx, &Message{Id: m.Id, Data: out[0].Interface()})
+		c.Conn.SendRaw(ctx, &Message{Id: m.Id, Data: out[0].Interface()})
 		m.Id = 0
 	} else if m.Id > 0 {
-		c.Conn.SendMessage(ctx, &Message{Id: m.Id})
+		c.Conn.SendRaw(ctx, &Message{Id: m.Id})
 		m.Id = 0
 	}
 }
