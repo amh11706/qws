@@ -31,6 +31,7 @@ const (
 	RanksUser
 	RanksTop
 	MatchesUser
+	GetWinLoss
 	MatchData
 	MatchAi
 	MatchScore
