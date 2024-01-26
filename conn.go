@@ -144,6 +144,9 @@ func (c *Conn) Close() {
 }
 
 func (c *Conn) Send(ctx context.Context, cmd outcmds.Cmd, data interface{}) {
+	if c == nil || c.closed {
+		return
+	}
 	m, err := PrepareJsonMessage(cmd, data)
 	if logger.Check(err) {
 		return
@@ -165,6 +168,9 @@ func PrepareJsonMessage(cmd outcmds.Cmd, data interface{}) (*websocket.PreparedM
 }
 
 func (c *Conn) SendRaw(ctx context.Context, data interface{}) {
+	if c == nil || c.closed {
+		return
+	}
 	b, err := json.Marshal(data)
 	if logger.Check(err) {
 		return
