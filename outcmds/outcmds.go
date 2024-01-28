@@ -57,7 +57,6 @@ const (
 	Sit
 	PlayTo
 	Take
-	Score
 	Scores
 	Over
 	OfferBlind
