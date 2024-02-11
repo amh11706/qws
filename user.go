@@ -17,10 +17,20 @@ var Users = qsql.NewTable(&qdb.DB, "users")
 
 type Invitation struct {
 	From   qsql.LazyString `json:"f"`
-	Admin  qsql.LazyInt    `json:"a"`
+	Admin  AdminLevel      `json:"a"`
 	Type   byte            `json:"ty"`
 	Target int64           `json:"tg"`
 }
+
+type AdminLevel qsql.LazyInt
+
+const (
+	AdminLevelUser AdminLevel = iota
+	AdminLevelMapCreator
+	AdminLevelMod
+	AdminLevelAdmin
+	AdminLevelSuperAdmin
+)
 
 type User struct {
 	Id        qsql.LazyInt    `db:"id"`
@@ -28,7 +38,7 @@ type User struct {
 	Pass      qsql.LazyString `json:"password" db:"password"`
 	Inventory qsql.LazyInt    `db:"inventory"`
 	Email     qsql.LazyString `json:"email" db:"email"`
-	AdminLvl  qsql.LazyInt    `db:"admin_level"`
+	AdminLvl  AdminLevel      `db:"admin_level"`
 	Token     qsql.LazyString `db:"token"`
 	TokenSent qsql.LazyUnix   `db:"token_sent"`
 	Online    map[string]UserList
