@@ -24,6 +24,13 @@ type Invitation struct {
 
 type AdminLevel qsql.LazyInt
 
+func (a *AdminLevel) Scan(src interface{}) error {
+	li := qsql.LazyInt(0)
+	err := li.Scan(src)
+	*a = AdminLevel(li)
+	return err
+}
+
 const (
 	AdminLevelUser AdminLevel = iota
 	AdminLevelMapCreator
