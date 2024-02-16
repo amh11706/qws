@@ -27,7 +27,7 @@ type Router struct {
 
 func (r *Router) ServeWS(ctx context.Context, c *UserConn, m *RawMessage) {
 	if r.routes == nil {
-		log.Println("No assigned handlers for user", c.User.Id)
+		log.Println("No assigned handlers for user", c.UserId())
 		return
 	}
 
@@ -41,11 +41,11 @@ func (r *Router) ServeWS(ctx context.Context, c *UserConn, m *RawMessage) {
 		handler.ServeWS(ctx, c, m)
 		if m.Id > 0 {
 			logger.Error("Sent missed return id for message:", m)
-			c.Conn.SendRaw(ctx, &Message{Id: m.Id})
+			c.SendRaw(ctx, &Message{Id: m.Id})
 			m.Id = 0
 		}
 	} else {
-		log.Println("No matching handlers for user", c.User.Id, "and cmd", m.Cmd)
+		log.Println("No matching handlers for user", c.UserId(), "and cmd", m.Cmd)
 		fmt.Println(r.routes)
 		r.lock.Unlock()
 	}

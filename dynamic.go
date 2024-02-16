@@ -26,8 +26,8 @@ func (h *DynamicHandler) ServeWS(ctx context.Context, c *UserConn, m *RawMessage
 			f := runtime.FuncForPC(h.f.Pointer())
 			file, line := runtime.FuncForPC(h.f.Pointer()).FileLine(f.Entry())
 			log.Printf(
-				"\x1b[36m%s(%d)\x1b[0m invalid ws parameter for func at %s:%d %v\n",
-				c.User.Name, c.Copy, file, line, string(m.Data),
+				"\x1b[36m%s\x1b[0m invalid ws parameter for func at %s:%d %v\n",
+				c.PrintName(), file, line, string(m.Data),
 			)
 			return
 		}
@@ -35,10 +35,10 @@ func (h *DynamicHandler) ServeWS(ctx context.Context, c *UserConn, m *RawMessage
 	}
 
 	if m.Id > 0 && len(out) > 0 {
-		c.Conn.SendRaw(ctx, &Message{Id: m.Id, Data: out[0].Interface()})
+		c.SendRaw(ctx, &Message{Id: m.Id, Data: out[0].Interface()})
 		m.Id = 0
 	} else if m.Id > 0 {
-		c.Conn.SendRaw(ctx, &Message{Id: m.Id})
+		c.SendRaw(ctx, &Message{Id: m.Id})
 		m.Id = 0
 	}
 }

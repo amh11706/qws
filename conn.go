@@ -55,12 +55,12 @@ type Setting struct {
 type UserConn struct {
 	*Conn
 	User       *User
-	Router     *Router
-	CmdRouter  *CmdRouter
-	Settings   map[string]byte
+	router     *Router
+	cmdRouter  *CmdRouter
+	settings   map[string]byte
 	SId        int64
 	Copy       int64
-	InLobby    int64
+	inLobby    int64
 	closeHooks []CloseHandler
 }
 
@@ -68,9 +68,9 @@ func NewUserConn(ctx context.Context, user *User, conn *websocket.Conn) *UserCon
 	uConn := &UserConn{
 		User:       user,
 		Conn:       NewConn(ctx, conn),
-		Settings:   make(map[string]byte),
-		Router:     &Router{},
-		CmdRouter:  &CmdRouter{},
+		settings:   make(map[string]byte),
+		router:     &Router{},
+		cmdRouter:  &CmdRouter{},
 		closeHooks: make([]CloseHandler, 0, 4),
 	}
 	return uConn
@@ -78,6 +78,45 @@ func NewUserConn(ctx context.Context, user *User, conn *websocket.Conn) *UserCon
 
 func (c *UserConn) Id() int64 {
 	return c.SId
+}
+
+func (c *UserConn) UserConn() *UserConn {
+	return c
+}
+
+func (c *UserConn) Router() *Router {
+	return c.router
+}
+
+func (c *UserConn) CmdRouter() *CmdRouter {
+	return c.cmdRouter
+}
+
+func (c *UserConn) AdminLevel() AdminLevel {
+	return c.User.AdminLvl
+}
+
+func (c *UserConn) InLobby() int64 {
+	return c.inLobby
+}
+
+func (c *UserConn) SetInLobby(id int64) {
+	c.inLobby = id
+}
+
+func (u *UserConn) UserId() int64 {
+	return int64(u.User.Id)
+}
+
+func (u *UserConn) Name() string {
+	return string(u.User.Name)
+}
+
+func (u *UserConn) Settings() map[string]byte {
+	if u.settings == nil {
+		u.settings = make(map[string]byte)
+	}
+	return u.settings
 }
 
 type Player struct {
@@ -134,7 +173,7 @@ func (c *UserConn) PrintName() string {
 }
 
 func (c *UserConn) UserName() UserName {
-	return UserName{From: string(c.User.Name), Copy: c.Copy, Admin: int64(c.User.AdminLvl)}
+	return UserName{From: c.Name(), Copy: c.Copy, Admin: c.AdminLevel()}
 }
 
 func (c *UserConn) Close() {
@@ -249,7 +288,7 @@ func (uConn *UserConn) handleMessage(ctx context.Context, m *RawMessage) {
 		}
 	}()
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
-	uConn.Router.ServeWS(ctx, uConn, m)
+	uConn.router.ServeWS(ctx, uConn, m)
 	cancel()
 }
 

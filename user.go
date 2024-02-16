@@ -16,10 +16,10 @@ import (
 var Users = qsql.NewTable(&qdb.DB, "users")
 
 type Invitation struct {
-	From   qsql.LazyString `json:"f"`
-	Admin  AdminLevel      `json:"a"`
-	Type   byte            `json:"ty"`
-	Target int64           `json:"tg"`
+	From   string     `json:"f"`
+	Admin  AdminLevel `json:"a"`
+	Type   byte       `json:"ty"`
+	Target int64      `json:"tg"`
 }
 
 type AdminLevel qsql.LazyInt
@@ -75,15 +75,15 @@ func (u *User) SaveSeen(ctx context.Context) {
 	logger.CheckP(err, fmt.Sprintf("Saving user %d:", u.Id))
 }
 
-func (u *User) IsBlocked(c *UserConn) bool {
+func (u *User) IsBlocked(c MessageSender) bool {
 	if u.Blocked == nil {
 		return false
 	}
 	var name string
-	if c.User.Id == 0 {
+	if c.UserId() == 0 {
 		name = c.PrintName()
 	} else {
-		name = string(c.User.Name)
+		name = c.Name()
 	}
 	_, b := u.Blocked[name]
 	return b
