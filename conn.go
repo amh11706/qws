@@ -76,6 +76,10 @@ func NewUserConn(ctx context.Context, user *User, conn *websocket.Conn) *UserCon
 	return uConn
 }
 
+func (c *UserConn) Id() int64 {
+	return c.SId
+}
+
 type Player struct {
 	UserName
 	SId int64 `json:"sId"`

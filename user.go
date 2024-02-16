@@ -48,7 +48,7 @@ type User struct {
 	AdminLvl  AdminLevel      `db:"admin_level"`
 	Token     qsql.LazyString `db:"token"`
 	TokenSent qsql.LazyUnix   `db:"token_sent"`
-	Online    map[string]UserList
+	Online    map[string]UserList[*UserConn]
 	Blocked   map[string]struct{}
 	Invites   []*Invitation
 	Lock      *lock.Lock

@@ -5,6 +5,7 @@ import (
 
 	"github.com/amh11706/logger"
 	"github.com/amh11706/qws/outcmds"
+	"github.com/gorilla/websocket"
 )
 
 type UserName struct {
@@ -13,10 +14,15 @@ type UserName struct {
 	Admin int64  `json:"admin"`
 }
 
-type UserList map[int64]*UserConn
+type MessageSender interface {
+	SendMessage(ctx context.Context, m *websocket.PreparedMessage)
+	Id() int64
+}
+
+type UserList[T MessageSender] map[int64]T
 
 // Broadcast sends the provided message to every user in the list.
-func (l UserList) Broadcast(ctx context.Context, cmd outcmds.Cmd, data interface{}) {
+func (l UserList[T]) Broadcast(ctx context.Context, cmd outcmds.Cmd, data interface{}) {
 	m, err := PrepareJsonMessage(cmd, data)
 	if logger.Check(err) {
 		return
@@ -28,15 +34,15 @@ func (l UserList) Broadcast(ctx context.Context, cmd outcmds.Cmd, data interface
 
 // BroadcastExcept sends the provided message to every user in the list except
 // the provided user.
-func (l UserList) BroadcastExcept(ctx context.Context, cmd outcmds.Cmd, data interface{}, e *UserConn) {
-	l.BroadcastFilter(ctx, cmd, data, func(u *UserConn) bool {
-		return u.SId != e.SId
+func (l UserList[T]) BroadcastExcept(ctx context.Context, cmd outcmds.Cmd, data interface{}, e T) {
+	l.BroadcastFilter(ctx, cmd, data, func(u T) bool {
+		return u.Id() != e.Id()
 	})
 }
 
 // BroadcastFilter sends the provided message to every user in the list for which
 // the provided filter func returns true.
-func (l UserList) BroadcastFilter(ctx context.Context, cmd outcmds.Cmd, data interface{}, filter func(*UserConn) bool) {
+func (l UserList[T]) BroadcastFilter(ctx context.Context, cmd outcmds.Cmd, data interface{}, filter func(T) bool) {
 	m, err := PrepareJsonMessage(cmd, data)
 	if logger.Check(err) {
 		return
