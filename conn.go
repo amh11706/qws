@@ -76,6 +76,15 @@ func NewUserConn(ctx context.Context, user *User, conn *websocket.Conn) *UserCon
 	return uConn
 }
 
+type Player struct {
+	UserName
+	SId int64 `json:"sId"`
+}
+
+func (c *UserConn) MarshalJSON() ([]byte, error) {
+	return json.Marshal(Player{UserName: c.UserName(), SId: c.SId})
+}
+
 func (c *UserConn) AddCloseHook(ctx context.Context, ch CloseHandler) error {
 	if ch == nil {
 		return nil
