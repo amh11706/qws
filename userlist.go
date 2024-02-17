@@ -36,7 +36,6 @@ type MessageSender interface {
 	PrintName() string
 	InLobby() int64
 	SetInLobby(int64)
-	Settings() map[string]byte
 }
 
 type UserList[T MessageSender] map[int64]T

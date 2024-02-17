@@ -57,7 +57,6 @@ type UserConn struct {
 	User       *User
 	router     *Router
 	cmdRouter  *CmdRouter
-	settings   map[string]byte
 	SId        int64
 	Copy       int64
 	inLobby    int64
@@ -68,7 +67,6 @@ func NewUserConn(ctx context.Context, user *User, conn *websocket.Conn) *UserCon
 	uConn := &UserConn{
 		User:       user,
 		Conn:       NewConn(ctx, conn),
-		settings:   make(map[string]byte),
 		router:     &Router{},
 		cmdRouter:  &CmdRouter{},
 		closeHooks: make([]CloseHandler, 0, 4),
@@ -77,14 +75,16 @@ func NewUserConn(ctx context.Context, user *User, conn *websocket.Conn) *UserCon
 }
 
 func (c *UserConn) Id() int64 {
+	if c == nil {
+		return 0
+	}
 	return c.SId
 }
 
-func (c *UserConn) UserConn() *UserConn {
-	return c
-}
-
 func (c *UserConn) Router() *Router {
+	if c == nil {
+		return nil
+	}
 	return c.router
 }
 
@@ -93,6 +93,9 @@ func (c *UserConn) CmdRouter() *CmdRouter {
 }
 
 func (c *UserConn) AdminLevel() AdminLevel {
+	if c == nil {
+		return 0
+	}
 	return c.User.AdminLvl
 }
 
@@ -105,18 +108,17 @@ func (c *UserConn) SetInLobby(id int64) {
 }
 
 func (u *UserConn) UserId() int64 {
+	if u == nil {
+		return 0
+	}
 	return int64(u.User.Id)
 }
 
 func (u *UserConn) Name() string {
-	return string(u.User.Name)
-}
-
-func (u *UserConn) Settings() map[string]byte {
-	if u.settings == nil {
-		u.settings = make(map[string]byte)
+	if u == nil || u.User == nil {
+		return ""
 	}
-	return u.settings
+	return string(u.User.Name)
 }
 
 type Player struct {
