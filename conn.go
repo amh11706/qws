@@ -165,8 +165,8 @@ func (c *UserConn) RemoveCloseHook(ctx context.Context, ch CloseHandler) error {
 }
 
 func (c *UserConn) PrintName() string {
-	if c.User == nil {
-		return ""
+	if c == nil || c.User == nil {
+		return "Missing User"
 	}
 	if c.Copy > 1 {
 		return fmt.Sprintf("%s(%d)", c.User.Name, c.Copy)
