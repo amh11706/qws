@@ -75,7 +75,7 @@ func (u *User) SaveSeen(ctx context.Context) {
 	logger.CheckP(err, fmt.Sprintf("Saving user %d:", u.Id))
 }
 
-func (u *User) IsBlocked(c MessageSender) bool {
+func (u *User) IsBlocked(c UserConner) bool {
 	if u.Blocked == nil {
 		return false
 	}

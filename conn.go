@@ -11,6 +11,7 @@ import (
 
 	"github.com/amh11706/logger"
 	"github.com/amh11706/qws/incmds"
+	"github.com/amh11706/qws/lock"
 	"github.com/amh11706/qws/outcmds"
 	"github.com/gorilla/websocket"
 )
@@ -52,6 +53,18 @@ type Setting struct {
 	Name  string
 }
 
+type UserInfoer interface {
+	Id() int64
+	UserId() int64
+	Name() string
+	AdminLevel() AdminLevel
+	UserName() UserName
+	PrintName() string
+	InLobby() int64
+	IsBot() bool
+	Lock() *lock.Lock
+}
+
 type UserConn struct {
 	*Conn
 	User       *User
@@ -72,6 +85,20 @@ func NewUserConn(ctx context.Context, user *User, conn *websocket.Conn) *UserCon
 		closeHooks: make([]CloseHandler, 0, 4),
 	}
 	return uConn
+}
+
+func (c *UserConn) IsBot() bool {
+	return c.Conn == nil
+}
+
+// hopefully never needed, but this is better than crashing
+var fallbackLock = &lock.Lock{}
+
+func (c *UserConn) Lock() *lock.Lock {
+	if c == nil || c.User == nil {
+		return fallbackLock
+	}
+	return c.User.Lock
 }
 
 func (c *UserConn) Id() int64 {
