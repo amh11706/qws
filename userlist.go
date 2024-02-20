@@ -5,6 +5,7 @@ import (
 
 	"github.com/amh11706/logger"
 	"github.com/amh11706/qws/outcmds"
+	"github.com/amh11706/qws/slice"
 	"github.com/gorilla/websocket"
 )
 
@@ -33,6 +34,10 @@ type UserConner interface {
 }
 
 type UserList[T UserConner] map[int64]T
+
+func (l UserList[T]) MarshalJSON() ([]byte, error) {
+	return slice.MarshalMapAsSliceJSON(l)
+}
 
 // Broadcast sends the provided message to every user in the list.
 func (l UserList[T]) Broadcast(ctx context.Context, cmd outcmds.Cmd, data interface{}) {
