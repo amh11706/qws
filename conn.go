@@ -48,17 +48,17 @@ func (c *Conn) ListenWrite(ctx context.Context) {
 	go c.listenWrite(ctx, 10*time.Second)
 }
 
-type Setting struct {
-	Group string
-	Name  string
-}
-
 type UserInfoer interface {
 	Id() int64
 	UserId() int64
-	Name() string
 	AdminLevel() AdminLevel
+	// Name is the user's raw name, not formatted for display
+	Name() string
+	// FilterName is used as a unique id when the actual id is not known
+	FilterName() string
+	// UserName used for chat messages
 	UserName() UserName
+	// PrintName used for boat names and server logs
 	PrintName() string
 	InLobby() int64
 	IsBot() bool
@@ -141,6 +141,17 @@ func (u *UserConn) UserId() int64 {
 	return int64(u.User.Id)
 }
 
+// FilterName is used as a unique id when the actual id is not known
+func (u *UserConn) FilterName() string {
+	name := u.Name()
+	if name == "Guest" {
+		// Guest requires the copy number to identify a unique user since many guests can have the same name
+		return u.PrintName()
+	}
+	return name
+}
+
+// Name is the user's raw name, not formatted for display
 func (u *UserConn) Name() string {
 	if u == nil || u.User == nil {
 		return ""
@@ -191,16 +202,18 @@ func (c *UserConn) RemoveCloseHook(ctx context.Context, ch CloseHandler) error {
 	return nil
 }
 
+// PrintName used for boat names and server logs
 func (c *UserConn) PrintName() string {
 	if c == nil || c.User == nil {
 		return "Missing User"
 	}
-	if c.Copy > 1 {
+	if c.Copy > 1 || c.User.Name == "Guest" {
 		return fmt.Sprintf("%s(%d)", c.User.Name, c.Copy)
 	}
 	return string(c.User.Name)
 }
 
+// UserName used for chat messages
 func (c *UserConn) UserName() UserName {
 	return UserName{From: c.Name(), Copy: c.Copy, Admin: c.AdminLevel()}
 }
