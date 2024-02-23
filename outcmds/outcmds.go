@@ -37,7 +37,6 @@ const (
 	PlayerAdd
 	PlayerList
 	PlayerRemove
-	LobbyStatus
 
 	LobbyJoin
 	Sync
@@ -61,4 +60,6 @@ const (
 	Scores
 	Over
 	OfferBlind
+
+	LobbyStatus
 )
