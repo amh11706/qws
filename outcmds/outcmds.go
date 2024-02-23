@@ -37,6 +37,7 @@ const (
 	PlayerAdd
 	PlayerList
 	PlayerRemove
+	LobbyStatus
 
 	LobbyJoin
 	Sync

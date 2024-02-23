@@ -85,4 +85,5 @@ const (
 	RateMap
 	SetMapData
 	SetMyJobbers
+	Vote
 )
