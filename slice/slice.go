@@ -24,22 +24,27 @@ func SliceToMap[T comparable, U any](s []T, f func(T) U) map[T]U {
 type VisibleCheckerMap[T comparable, U any] interface {
 	IsVisible(U) bool
 	Map() map[T]U
+	MarshalJSON() ([]byte, error)
 }
 
-type defaultVisibleCheckerMap[T comparable, U any] struct {
+type DefaultVisibleCheckerMap[T comparable, U any] struct {
 	m map[T]U
 }
 
-func (d defaultVisibleCheckerMap[T, U]) IsVisible(U) bool {
+func (d DefaultVisibleCheckerMap[T, U]) IsVisible(U) bool {
 	return true
 }
 
-func (d defaultVisibleCheckerMap[T, U]) Map() map[T]U {
+func (d DefaultVisibleCheckerMap[T, U]) Map() map[T]U {
 	return d.m
 }
 
+func (d DefaultVisibleCheckerMap[T, U]) MarshalJSON() ([]byte, error) {
+	return MarshalMapAsSliceJSON(d)
+}
+
 func NewVisibleCheckerMap[T comparable, U any](m map[T]U) VisibleCheckerMap[T, U] {
-	return defaultVisibleCheckerMap[T, U]{m}
+	return DefaultVisibleCheckerMap[T, U]{m}
 }
 
 func MarshalMapAsSliceJSON[T comparable, U any](m VisibleCheckerMap[T, U], itemSize ...int) ([]byte, error) {
