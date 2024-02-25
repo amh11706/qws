@@ -43,7 +43,7 @@ func (d DefaultVisibleCheckerMap[T, U]) MarshalJSON() ([]byte, error) {
 	return MarshalMapAsSliceJSON(d)
 }
 
-func NewVisibleCheckerMap[T comparable, U any](m map[T]U) VisibleCheckerMap[T, U] {
+func NewVisibleCheckerMap[T comparable, U any](m map[T]U) DefaultVisibleCheckerMap[T, U] {
 	return DefaultVisibleCheckerMap[T, U]{m}
 }
 

@@ -36,7 +36,45 @@ type UserConner interface {
 type UserList[T UserConner] map[int64]T
 
 func (l UserList[T]) MarshalJSON() ([]byte, error) {
-	return slice.MarshalMapAsSliceJSON(l)
+	return slice.NewVisibleCheckerMap(l).MarshalJSON()
+}
+
+type FilteredUserList[T UserInfoer] struct {
+	slice.DefaultVisibleCheckerMap[int64, T]
+	adminLevel AdminLevel
+}
+
+func (l FilteredUserList[T]) MarshalJSON() ([]byte, error) {
+	return slice.MarshalMapAsSliceJSON(l, 64)
+}
+
+func (l FilteredUserList[T]) IsVisible(u T) bool {
+	return !u.IsGhosted() || l.adminLevel >= u.AdminLevel()
+}
+
+func NewFilteredUserList[T UserInfoer](m map[int64]T, u AdminLevel) FilteredUserList[T] {
+	return FilteredUserList[T]{slice.NewVisibleCheckerMap(m), u}
+}
+
+func (l UserList[T]) FilterForAdminLevel(al AdminLevel) FilteredUserList[T] {
+	return NewFilteredUserList[T](l, al)
+}
+
+func (l UserList[T]) GroupByAdminLevel() map[AdminLevel]UserList[T] {
+	m := make(map[AdminLevel]UserList[T])
+	for _, u := range l {
+		if _, ok := m[u.AdminLevel()]; !ok {
+			m[u.AdminLevel()] = make(UserList[T])
+		}
+		m[u.AdminLevel()][u.Id()] = u
+	}
+	return m
+}
+
+func (l UserList[T]) BroadcastByAdminLevel(ctx context.Context) {
+	for al, ul := range l.GroupByAdminLevel() {
+		ul.Broadcast(ctx, outcmds.PlayerList, l.FilterForAdminLevel(al))
+	}
 }
 
 // Broadcast sends the provided message to every user in the list.

@@ -62,6 +62,7 @@ type UserInfoer interface {
 	PrintName() string
 	InLobby() int64
 	IsBot() bool
+	IsGhosted() bool
 	Lock() *lock.Lock
 }
 
@@ -73,6 +74,7 @@ type UserConn struct {
 	SId        int64
 	Copy       int64
 	inLobby    int64
+	Ghosted    bool
 	closeHooks []CloseHandler
 }
 
@@ -89,6 +91,10 @@ func NewUserConn(ctx context.Context, user *User, conn *websocket.Conn) *UserCon
 
 func (c *UserConn) IsBot() bool {
 	return c.Conn == nil
+}
+
+func (c *UserConn) IsGhosted() bool {
+	return c.Ghosted
 }
 
 // hopefully never needed, but this is better than crashing
