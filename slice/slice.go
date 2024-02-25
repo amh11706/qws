@@ -21,16 +21,40 @@ func SliceToMap[T comparable, U any](s []T, f func(T) U) map[T]U {
 	return result
 }
 
-func MarshalMapAsSliceJSON[T comparable, U any](m map[T]U, itemSize ...int) ([]byte, error) {
+type VisibleCheckerMap[T comparable, U any] interface {
+	IsVisible(U) bool
+	Map() map[T]U
+}
+
+type defaultVisibleCheckerMap[T comparable, U any] struct {
+	m map[T]U
+}
+
+func (d defaultVisibleCheckerMap[T, U]) IsVisible(U) bool {
+	return true
+}
+
+func (d defaultVisibleCheckerMap[T, U]) Map() map[T]U {
+	return d.m
+}
+
+func NewVisibleCheckerMap[T comparable, U any](m map[T]U) VisibleCheckerMap[T, U] {
+	return defaultVisibleCheckerMap[T, U]{m}
+}
+
+func MarshalMapAsSliceJSON[T comparable, U any](m VisibleCheckerMap[T, U], itemSize ...int) ([]byte, error) {
 	size := 64
 	if len(itemSize) > 0 {
 		size = itemSize[0]
 	}
-	var buf = bytes.NewBuffer(make([]byte, 0, size*len(m)))
+	var buf = bytes.NewBuffer(make([]byte, 0, size*len(m.Map())))
 	encoder := json.NewEncoder(buf)
 	buf.WriteByte('[')
 	first := true
-	for _, o := range m {
+	for _, o := range m.Map() {
+		if !m.IsVisible(o) {
+			continue
+		}
 		if !first {
 			buf.WriteByte(',')
 		}
