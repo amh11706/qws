@@ -70,6 +70,30 @@ func (u *User) RemoveInvite(ctx context.Context, invite *Invitation) {
 	u.Invites = newInvites
 }
 
+func (u *User) AddIp(ctx context.Context, ip string) {
+	_, err := qdb.DB.ExecContext(ctx, "INSERT IGNORE INTO user_ips (user_id,ip) VALUES (?,?)", u.Id, ip)
+	logger.CheckP(err, "Add user ip for user "+string(u.Name))
+}
+
+func LookupUser(ctx context.Context, c *UserConn, params []string) string {
+	name := FormatName(params[0])
+	var id int64
+	err := qdb.DB.GetContext(ctx, &id, "SELECT id FROM users WHERE username=?", name)
+	if logger.CheckP(err, "Lookup user "+name+":") || id == 0 {
+		return "User '" + name + "' not found"
+	}
+	matches := make([]string, 0, 2)
+	err = qdb.DB.SelectContext(ctx, &matches, `
+	SELECT username FROM users INNER JOIN user_ips ON users.id=user_ips.user_id
+	WHERE ip IN (SELECT ip FROM user_ips WHERE user_id=?) AND users.id!=?
+	ORDER BY last_seen DESC`,
+		id, id)
+	if logger.CheckP(err, "Lookup user "+name+":") || len(matches) == 0 {
+		return "No aliases found for " + name
+	}
+	return "Known aliases for " + name + ": " + strings.Join(matches, ", ")
+}
+
 func (u *User) SaveSeen(ctx context.Context) {
 	_, err := qdb.DB.ExecContext(ctx, "UPDATE users SET last_seen=NOW() WHERE id=?", u.Id)
 	logger.CheckP(err, fmt.Sprintf("Saving user %d:", u.Id))
