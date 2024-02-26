@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/amh11706/logger"
 	"github.com/amh11706/qdb"
@@ -73,6 +74,40 @@ func (u *User) RemoveInvite(ctx context.Context, invite *Invitation) {
 func (u *User) AddIp(ctx context.Context, ip string) {
 	_, err := qdb.DB.ExecContext(ctx, "INSERT INTO user_ips (user_id,ip) VALUES (?,?) ON DUPLICATE KEY UPDATE updated_at=NOW()", u.Id, ip)
 	logger.CheckP(err, "Add user ip for user "+string(u.Name))
+}
+
+func timeAgo(t time.Time) string {
+	elapsed := time.Since(t)
+
+	switch {
+	case elapsed < 2*time.Second:
+		return "just now"
+	case elapsed < 2*time.Minute:
+		return fmt.Sprintf("%d seconds ago", int(elapsed/time.Second))
+	case elapsed < 2*time.Hour:
+		return fmt.Sprintf("%d minutes ago", int(elapsed/time.Minute))
+	case elapsed < 2*time.Hour*24:
+		return fmt.Sprintf("%d hours ago", int(elapsed/time.Hour))
+	default:
+		return fmt.Sprintf("%d days ago", int(elapsed/(time.Hour*24)))
+	}
+}
+
+type loginData struct {
+	UpdatedAt qsql.LazyTime `db:"updated_at"`
+	Ip        string        `db:"ip"`
+}
+
+func (u *User) LastSeenMessage(ctx context.Context, ip string) string {
+	var lastSeen loginData
+	err := qdb.DB.GetContext(ctx, &lastSeen, "SELECT updated_at,ip FROM user_ips WHERE user_id=? ORDER BY updated_at DESC", u.Id)
+	if logger.CheckP(err, "Get last seen for user "+string(u.Name)) {
+		return ""
+	}
+	if lastSeen.Ip == ip {
+		return fmt.Sprintf("You last connected %s from this IP.", timeAgo(lastSeen.UpdatedAt.Time))
+	}
+	return fmt.Sprintf("You last connected %s from another IP.", timeAgo(lastSeen.UpdatedAt.Time))
 }
 
 func LookupUser(ctx context.Context, c *UserConn, params []string) string {
