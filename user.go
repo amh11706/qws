@@ -71,7 +71,7 @@ func (u *User) RemoveInvite(ctx context.Context, invite *Invitation) {
 }
 
 func (u *User) AddIp(ctx context.Context, ip string) {
-	_, err := qdb.DB.ExecContext(ctx, "INSERT IGNORE INTO user_ips (user_id,ip) VALUES (?,?)", u.Id, ip)
+	_, err := qdb.DB.ExecContext(ctx, "INSERT INTO user_ips (user_id,ip) VALUES (?,?) ON DUPLICATE KEY UPDATE updated_at=NOW()", u.Id, ip)
 	logger.CheckP(err, "Add user ip for user "+string(u.Name))
 }
 
@@ -84,9 +84,9 @@ func LookupUser(ctx context.Context, c *UserConn, params []string) string {
 	}
 	matches := make([]string, 0, 2)
 	err = qdb.DB.SelectContext(ctx, &matches, `
-	SELECT username FROM users INNER JOIN user_ips ON users.id=user_ips.user_id
+	SELECT DISTINCT username FROM users INNER JOIN user_ips ON users.id=user_ips.user_id
 	WHERE ip IN (SELECT ip FROM user_ips WHERE user_id=?) AND users.id!=?
-	ORDER BY last_seen DESC`,
+	ORDER BY user_ips.updated_at DESC`,
 		id, id)
 	if logger.CheckP(err, "Lookup user "+name+":") || len(matches) == 0 {
 		return "No aliases found for " + name
