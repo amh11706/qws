@@ -10,8 +10,9 @@ import (
 )
 
 type Lock struct {
-	lock chan struct{}
-	ctx  context.Context
+	lock  chan struct{}
+	ctx   context.Context
+	depth byte
 }
 
 func NewLock() *Lock {
@@ -21,17 +22,21 @@ func NewLock() *Lock {
 }
 
 var (
-	NilLock      = errors.New("Cannot lock nil lock")
-	CtxCancelled = errors.New("Failed to get lock: ctx cancelled")
+	ErrorNilLock      = errors.New("Cannot lock nil lock")
+	ErrorCtxCancelled = errors.New("Failed to get lock: ctx cancelled")
 )
 
 func (l *Lock) Lock(ctx context.Context) error {
-	if l == nil {
-		return NilLock
+	if l == nil || l.lock == nil {
+		return ErrorNilLock
+	}
+	if l.ctx == ctx {
+		l.depth++
+		return nil
 	}
 	select {
 	case <-ctx.Done():
-		return CtxCancelled
+		return ErrorCtxCancelled
 	case <-l.lock:
 		time.AfterFunc(5*time.Second, l.check(ctx))
 		l.ctx = ctx
@@ -43,26 +48,23 @@ func (l *Lock) check(ctx context.Context) func() {
 	return func() {
 		if l.ctx == ctx {
 			l.Unlock()
-			logger.CheckStack(fmt.Errorf("Released dead lock!"))
+			logger.CheckStack(fmt.Errorf("Released expired lock!"))
 		}
 	}
 }
 
 func (l *Lock) MustLock(ctx context.Context) {
-	if l == nil || l.lock == nil {
-		panic(NilLock)
-	}
-	select {
-	case <-ctx.Done():
-		panic(CtxCancelled)
-	case <-l.lock:
-		time.AfterFunc(5*time.Second, l.check(ctx))
-		l.ctx = ctx
-		return
+	err := l.Lock(ctx)
+	if err != nil {
+		panic(err)
 	}
 }
 
 func (l *Lock) Unlock() {
+	if l.depth > 0 {
+		l.depth--
+		return
+	}
 	if len(l.lock) != 0 {
 		panic("Unlock on already unlocked lock")
 	}
