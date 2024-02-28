@@ -99,6 +99,9 @@ type loginData struct {
 }
 
 func (u *User) LastSeenMessage(ctx context.Context, ip string) string {
+	if u.Id == 0 {
+		return ""
+	}
 	var lastSeen loginData
 	err := qdb.DB.GetContext(ctx, &lastSeen, "SELECT updated_at,ip FROM user_ips WHERE user_id=? ORDER BY updated_at DESC", u.Id)
 	if logger.CheckP(err, "Get last seen for user "+string(u.Name)) {
