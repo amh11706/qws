@@ -1,8 +1,10 @@
 package safe
 
 import (
+	"errors"
 	"fmt"
-	"runtime/debug"
+
+	"github.com/amh11706/logger"
 )
 
 func Go(f func(), onError func()) {
@@ -12,8 +14,9 @@ func Go(f func(), onError func()) {
 				if onError != nil {
 					onError()
 				}
-				fmt.Println("WS Panic recovered:", r)
-				debug.PrintStack()
+				message := fmt.Sprintf("Panic recovered: %v", r)
+				fmt.Println(message)
+				logger.CheckStack(errors.New(message))
 			}
 		}()
 

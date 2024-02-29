@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"runtime/debug"
 	"time"
 
 	"github.com/amh11706/logger"
@@ -330,8 +329,9 @@ func (uConn *UserConn) ListenRead(ctx context.Context) {
 func (uConn *UserConn) handleMessage(ctx context.Context, m *RawMessage) {
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("WS Panic serving", uConn.PrintName()+":", r)
-			debug.PrintStack()
+			message := fmt.Sprintf("Panic serving %s: %v", uConn.PrintName(), r)
+			fmt.Println(message)
+			logger.CheckStack(errors.New(message))
 			uConn.SendInfo(ctx, "Something went wrong...")
 		}
 	}()
