@@ -1,5 +1,7 @@
 github.com/amh11706/logger v0.0.0-20201129235537-bd39034853ae h1:nGOPVyV/NuRBYlstlSCNAeLuROezNiOmDPxOb1BHkV8=
 github.com/amh11706/logger v0.0.0-20201129235537-bd39034853ae/go.mod h1:8A2Ij4+57goUYii0LD70pxO1pwpEg1glFOLlzQJZMQg=
+github.com/amh11706/logger v0.0.0-20240228210936-9df6d23b8ea9 h1:S2Hzlo1P3ibkAKoXCq0qsyMI3r5k1mdafOnHuVLLZAQ=
+github.com/amh11706/logger v0.0.0-20240228210936-9df6d23b8ea9/go.mod h1:8A2Ij4+57goUYii0LD70pxO1pwpEg1glFOLlzQJZMQg=
 github.com/amh11706/qdb v0.0.0-20201108153937-e79024dfa7f6 h1:4+Dk/76tJP1yV9kUtEd5+M0j30NcATGOlrxOphAX29Y=
 github.com/amh11706/qdb v0.0.0-20201108153937-e79024dfa7f6/go.mod h1:5+gYknBTTzHKueUpXvJtyQbc6xOgEZTuHI+uZI5k3A8=
 github.com/amh11706/qsql v0.0.0-20220123094420-b9b581d9642f h1:J8DAFvhTRk/XGhCGANjgcc1Bb0WxTZn9GORlOBZFUbQ=
@@ -21,7 +23,6 @@ github.com/jmoiron/sqlx v1.3.5 h1:vFFPA71p1o5gAeqtEAwLU4dnX2napprKtHr7PYIcN3g=
 github.com/jmoiron/sqlx v1.3.5/go.mod h1:nRVWtLre0KfCLJvgxzCsLVMogSvQ1zNJtpYr2Ccp0mQ=
 github.com/lib/pq v1.0.0 h1:X5PMW56eZitiTeO7tKzZxFCSpbFZJtkMMooicw2us9A=
 github.com/lib/pq v1.0.0/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=
-github.com/lib/pq v1.2.0 h1:LXpIM/LZ5xGFhOpXAQUIMM1HdyqzVYM13zNdjCEEcA0=
 github.com/lib/pq v1.2.0/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=
 github.com/mattn/go-sqlite3 v1.9.0 h1:pDRiWfl+++eC2FEFRy6jXmQlvp4Yh3z1MJKg4UeYM/4=
 github.com/mattn/go-sqlite3 v1.9.0/go.mod h1:FPy6KqzDD04eiIsT53CuJW3U88zkxoIYsOqkbpncsNc=
