@@ -113,8 +113,20 @@ func (u *User) LastSeenMessage(ctx context.Context, ip string) string {
 	return fmt.Sprintf("You last connected %s from another IP.", timeAgo(lastSeen.UpdatedAt.Time))
 }
 
-func LookupUser(ctx context.Context, c *UserConn, params []string) string {
-	name := FormatName(params[0])
+func LookupIp(ctx context.Context, ip string) string {
+	matches := make([]string, 0, 2)
+	err := qdb.DB.SelectContext(ctx, &matches, `
+	SELECT DISTINCT username FROM users INNER JOIN user_ips ON users.id=user_ips.user_id
+	WHERE ip=?
+	ORDER BY user_ips.updated_at DESC`,
+		ip)
+	if logger.CheckP(err, "Lookup IP "+ip+":") || len(matches) == 0 {
+		return "No users found."
+	}
+	return "Known users: " + strings.Join(matches, ", ")
+}
+
+func LookupUser(ctx context.Context, c *UserConn, name string) string {
 	var id int64
 	err := qdb.DB.GetContext(ctx, &id, "SELECT id FROM users WHERE username=?", name)
 	if logger.CheckP(err, "Lookup user "+name+":") || id == 0 {

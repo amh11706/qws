@@ -36,10 +36,11 @@ type Conn struct {
 	conn     *websocket.Conn
 	sendChan chan *websocket.PreparedMessage
 	closed   bool
+	ip       string
 }
 
-func NewConn(ctx context.Context, conn *websocket.Conn) *Conn {
-	c := &Conn{conn: conn, sendChan: make(chan *websocket.PreparedMessage, 50)}
+func NewConn(ctx context.Context, conn *websocket.Conn, ip string) *Conn {
+	c := &Conn{conn: conn, sendChan: make(chan *websocket.PreparedMessage, 50), ip: ip}
 	return c
 }
 
@@ -77,15 +78,19 @@ type UserConn struct {
 	closeHooks []CloseHandler
 }
 
-func NewUserConn(ctx context.Context, user *User, conn *websocket.Conn) *UserConn {
+func NewUserConn(ctx context.Context, user *User, conn *websocket.Conn, ip string) *UserConn {
 	uConn := &UserConn{
 		User:       user,
-		Conn:       NewConn(ctx, conn),
+		Conn:       NewConn(ctx, conn, ip),
 		router:     &Router{},
 		cmdRouter:  &CmdRouter{},
 		closeHooks: make([]CloseHandler, 0, 4),
 	}
 	return uConn
+}
+
+func (c *UserConn) Ip() string {
+	return c.ip
 }
 
 func (c *UserConn) IsBot() bool {
