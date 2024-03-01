@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/amh11706/qws/safe"
 )
 
 var (
@@ -49,7 +51,7 @@ func (s *Subscribable[T]) Publish(ctx context.Context, v T) error {
 	return nil
 }
 
-func (s *Subscribable[T]) Subscribe(ctx context.Context) (*Subscription[T], error) {
+func (s *Subscribable[T]) Subscribe(ctx context.Context, cb func(T)) (*Subscription[T], error) {
 	if err := s.lock.Lock(ctx); err != nil {
 		return nil, err
 	}
@@ -60,6 +62,11 @@ func (s *Subscribable[T]) Subscribe(ctx context.Context) (*Subscription[T], erro
 		parent:  s,
 	}
 	s.subscribers[sub] = struct{}{}
+	safe.Go(func() {
+		for v := range sub.channel {
+			cb(v)
+		}
+	}, nil)
 	return sub, nil
 }
 

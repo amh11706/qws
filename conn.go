@@ -330,7 +330,6 @@ func (uConn *UserConn) handleMessage(ctx context.Context, m *RawMessage) {
 	defer func() {
 		if r := recover(); r != nil {
 			message := fmt.Sprintf("Panic serving %s: %v", uConn.PrintName(), r)
-			fmt.Println(message)
 			logger.CheckStack(errors.New(message))
 			uConn.SendInfo(ctx, "Something went wrong...")
 		}
