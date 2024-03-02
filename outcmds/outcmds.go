@@ -28,6 +28,7 @@ const (
 	ChatCommands
 	Reload
 	SetUser
+	UpdateUser
 )
 
 const (
