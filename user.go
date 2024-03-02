@@ -41,18 +41,19 @@ const (
 )
 
 type User struct {
-	Id        qsql.LazyInt    `db:"id"`
-	Name      qsql.LazyString `db:"username"`
-	Pass      qsql.LazyString `json:"password" db:"password"`
-	Inventory qsql.LazyInt    `db:"inventory"`
-	Email     qsql.LazyString `json:"email" db:"email"`
-	AdminLvl  AdminLevel      `db:"admin_level"`
-	Token     qsql.LazyString `db:"token"`
-	TokenSent qsql.LazyUnix   `db:"token_sent"`
-	Online    map[string]UserList[*UserConn]
-	Blocked   map[string]struct{}
-	Invites   []*Invitation
-	Lock      *lock.Lock
+	Id         qsql.LazyInt    `db:"id"`
+	Name       qsql.LazyString `db:"username"`
+	Decoration qsql.LazyString `db:"decoration"`
+	Pass       qsql.LazyString `json:"password" db:"password"`
+	Inventory  qsql.LazyInt    `db:"inventory"`
+	Email      qsql.LazyString `json:"email" db:"email"`
+	AdminLvl   AdminLevel      `db:"admin_level"`
+	Token      qsql.LazyString `db:"token"`
+	TokenSent  qsql.LazyUnix   `db:"token_sent"`
+	Online     map[string]UserList[*UserConn]
+	Blocked    map[string]struct{}
+	Invites    []*Invitation
+	Lock       *lock.Lock
 }
 
 func (u *User) MarshalJSON() ([]byte, error) {
@@ -161,6 +162,16 @@ func (u *User) IsBlocked(c UserConner) bool {
 	}
 	_, b := u.Blocked[name]
 	return b
+}
+
+func SetUserDecoration(ctx context.Context, c *UserConn, decoration string) {
+	if c.User.Decoration == "" {
+		logger.Error("Set invalid user decoration for user " + c.Name() + ": " + decoration)
+		return
+	}
+	_, err := qdb.DB.ExecContext(ctx, "UPDATE users SET decoration=? WHERE id=?", decoration, c.UserId())
+	logger.CheckP(err, "Set user decoration for user "+c.Name())
+	c.User.Decoration = qsql.LazyString(decoration)
 }
 
 func FormatName(n string) string {

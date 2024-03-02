@@ -10,9 +10,10 @@ import (
 )
 
 type UserName struct {
-	From  string     `json:"from"`
-	Copy  int64      `json:"copy"`
-	Admin AdminLevel `json:"admin"`
+	From       string     `json:"from"`
+	Copy       int64      `json:"copy"`
+	Admin      AdminLevel `json:"admin"`
+	Decoration string     `json:"d"`
 }
 
 type MessageSender interface {

@@ -225,7 +225,7 @@ func (c *UserConn) PrintName() string {
 
 // UserName used for chat messages
 func (c *UserConn) UserName() UserName {
-	return UserName{From: c.Name(), Copy: c.Copy, Admin: c.AdminLevel()}
+	return UserName{From: c.Name(), Copy: c.Copy, Admin: c.AdminLevel(), Decoration: string(c.User.Decoration)}
 }
 
 func (c *UserConn) Close() {

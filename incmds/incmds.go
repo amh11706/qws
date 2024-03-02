@@ -42,6 +42,7 @@ const (
 	ChangeName
 	SearchNames
 	SearchNamesOnline
+	SetUserEmoji
 )
 
 const (
