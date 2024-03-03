@@ -40,13 +40,25 @@ const (
 	AdminLevelSuperAdmin
 )
 
+type Email qsql.LazyString
+
+func (e *Email) UnmarshalJSON(data []byte) error {
+	var s string
+	err := json.Unmarshal(data, &s)
+	if err != nil {
+		return err
+	}
+	*e = Email(strings.ToLower(s))
+	return nil
+}
+
 type User struct {
 	Id         qsql.LazyInt    `db:"id"`
 	Name       qsql.LazyString `db:"username"`
 	Decoration qsql.LazyString `db:"decoration"`
 	Pass       qsql.LazyString `json:"password" db:"password"`
 	Inventory  qsql.LazyInt    `db:"inventory"`
-	Email      qsql.LazyString `json:"email" db:"email"`
+	Email      Email           `db:"email"`
 	AdminLvl   AdminLevel      `db:"admin_level"`
 	Token      qsql.LazyString `db:"token"`
 	TokenSent  qsql.LazyUnix   `db:"token_sent"`
