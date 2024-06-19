@@ -185,11 +185,11 @@ func (c *UserConn) AddCloseHook(ctx context.Context, ch CloseHandler) error {
 	if err := c.User.Lock.Lock(ctx); err != nil {
 		return err
 	}
+	defer c.User.Lock.Unlock()
 	if c.closed {
 		return errors.New("Connection closed")
 	}
 	c.closeHooks = append(c.closeHooks, ch)
-	c.User.Lock.Unlock()
 	return nil
 }
 
@@ -200,6 +200,7 @@ func (c *UserConn) RemoveCloseHook(ctx context.Context, ch CloseHandler) error {
 	if err := c.User.Lock.Lock(ctx); err != nil {
 		return err
 	}
+	defer c.User.Lock.Unlock()
 	for i, h := range c.closeHooks {
 		if ch == h {
 			last := len(c.closeHooks) - 1
@@ -208,7 +209,6 @@ func (c *UserConn) RemoveCloseHook(ctx context.Context, ch CloseHandler) error {
 			break
 		}
 	}
-	c.User.Lock.Unlock()
 	return nil
 }
 
@@ -229,13 +229,13 @@ func (c *UserConn) UserName() UserName {
 }
 
 func (c *UserConn) Close() {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	c.User.Lock.MustLock(ctx)
+	defer c.User.Lock.Unlock()
 	chs := c.closeHooks
 	c.closeHooks = nil
 	c.closed = true
-	c.User.Lock.Unlock()
 	for i := len(chs) - 1; i >= 0; i-- {
 		(*chs[i])(ctx, c)
 	}
