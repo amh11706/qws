@@ -40,6 +40,11 @@ func (h *DynamicHandler) ServeWS(ctx context.Context, c *UserConn, m *RawMessage
 	} else if m.Id > 0 {
 		c.SendRaw(ctx, &Message{Id: m.Id})
 		m.Id = 0
+	} else if len(out) > 0 {
+		r := out[0].Interface()
+		if v, ok := r.(string); ok && v != "" {
+			c.SendInfo(ctx, v)
+		}
 	}
 }
 

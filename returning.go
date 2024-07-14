@@ -8,7 +8,10 @@ type ReturningFunc func(ctx context.Context, c *UserConn, m *RawMessage) interfa
 
 func (f ReturningFunc) ServeWS(ctx context.Context, c *UserConn, m *RawMessage) {
 	if m.Id == 0 {
-		f(ctx, c, m)
+		r := f(ctx, c, m)
+		if v, ok := r.(string); ok && v != "" {
+			c.SendInfo(ctx, v)
+		}
 		return
 	}
 	r := f(ctx, c, m)
