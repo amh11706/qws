@@ -74,7 +74,9 @@ func (l UserList[T]) Broadcast(ctx context.Context, cmd outcmds.Cmd, data interf
 		return
 	}
 	for _, u := range l {
-		u.SendMessage(ctx, m)
+		if !u.IsIgnored() {
+			u.SendMessage(ctx, m)
+		}
 	}
 }
 
@@ -94,7 +96,7 @@ func (l UserList[T]) BroadcastFilter(ctx context.Context, cmd outcmds.Cmd, data 
 		return
 	}
 	for _, u := range l {
-		if filter(u) {
+		if !u.IsIgnored() && filter(u) {
 			u.SendMessage(ctx, m)
 		}
 	}

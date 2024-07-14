@@ -39,7 +39,7 @@ type Conn struct {
 	ip       string
 }
 
-func NewConn(ctx context.Context, conn *websocket.Conn, ip string) *Conn {
+func NewConn(conn *websocket.Conn, ip string) *Conn {
 	c := &Conn{conn: conn, sendChan: make(chan *websocket.PreparedMessage, 50), ip: ip}
 	return c
 }
@@ -63,6 +63,7 @@ type UserInfoer interface {
 	InLobby() int64
 	IsBot() bool
 	IsGhosted() bool
+	IsIgnored() bool
 	Lock() *lock.Lock
 }
 
@@ -78,15 +79,19 @@ type UserConn struct {
 	closeHooks []CloseHandler
 }
 
-func NewUserConn(ctx context.Context, user *User, conn *websocket.Conn, ip string) *UserConn {
+func NewUserConn(user *User, conn *websocket.Conn, ip string) *UserConn {
 	uConn := &UserConn{
 		User:       user,
-		Conn:       NewConn(ctx, conn, ip),
+		Conn:       NewConn(conn, ip),
 		router:     &Router{},
 		cmdRouter:  &CmdRouter{},
 		closeHooks: make([]CloseHandler, 0, 4),
 	}
 	return uConn
+}
+
+func (c *UserConn) IsIgnored() bool {
+	return false
 }
 
 func (c *UserConn) Ip() string {
