@@ -111,6 +111,10 @@ type loginData struct {
 	Ip        string        `db:"ip"`
 }
 
+func (u *User) IsGuest() bool {
+	return u.Id == 0
+}
+
 func (u *User) LastSeenMessage(ctx context.Context, ip string) string {
 	if u.Id == 0 {
 		return ""

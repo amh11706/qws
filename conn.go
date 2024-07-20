@@ -64,12 +64,13 @@ type UserInfoer interface {
 	IsBot() bool
 	IsGhosted() bool
 	IsIgnored() bool
+	IsGuest() bool
 	Lock() *lock.Lock
 }
 
 type UserConn struct {
 	*Conn
-	User       *User
+	*User
 	router     *Router
 	cmdRouter  *CmdRouter
 	SId        int64
