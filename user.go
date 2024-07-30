@@ -166,28 +166,36 @@ func (u *User) SaveSeen(ctx context.Context) {
 	logger.CheckP(err, fmt.Sprintf("Saving user %d:", u.Id))
 }
 
-func (u *User) IsBlocked(c UserConner) bool {
+func (u *User) IsBlocked(ctx context.Context, c UserConner) bool {
 	if u.Blocked == nil {
 		return false
 	}
-	var name string
-	if c.UserId() == 0 {
-		name = c.PrintName()
-	} else {
-		name = c.Name()
-	}
-	_, b := u.Blocked[name]
+	u.Lock.MustLock(ctx)
+	_, b := u.Blocked[c.Name()]
+	u.Lock.Unlock()
 	return b
 }
 
+func (u *User) Block(ctx context.Context, name string) {
+	u.Lock.MustLock(ctx)
+	u.Blocked[name] = struct{}{}
+	u.Lock.Unlock()
+}
+
+func (u *User) Unblock(ctx context.Context, name string) {
+	u.Lock.MustLock(ctx)
+	delete(u.Blocked, name)
+	u.Lock.Unlock()
+}
+
 func SetUserDecoration(ctx context.Context, c *UserConn, decoration string) {
-	if c.User.Decoration == "" {
+	if c.user.Decoration == "" {
 		logger.Error("Set invalid user decoration for user " + c.Name() + ": " + decoration)
 		return
 	}
 	_, err := qdb.DB.ExecContext(ctx, "UPDATE users SET decoration=? WHERE id=?", decoration, c.UserId())
 	logger.CheckP(err, "Set user decoration for user "+c.Name())
-	c.User.Decoration = qsql.LazyString(decoration)
+	c.user.Decoration = qsql.LazyString(decoration)
 }
 
 func FormatName(n string) string {

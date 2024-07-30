@@ -50,6 +50,7 @@ func (c *Conn) ListenWrite(ctx context.Context) {
 
 type UserInfoer interface {
 	Id() int64
+	User() *User
 	UserId() int64
 	AdminLevel() AdminLevel
 	// Name is the user's raw name, not formatted for display
@@ -70,7 +71,7 @@ type UserInfoer interface {
 
 type UserConn struct {
 	*Conn
-	*User
+	user       *User
 	router     *Router
 	cmdRouter  *CmdRouter
 	SId        int64
@@ -82,13 +83,25 @@ type UserConn struct {
 
 func NewUserConn(user *User, conn *websocket.Conn, ip string) *UserConn {
 	uConn := &UserConn{
-		User:       user,
+		user:       user,
 		Conn:       NewConn(conn, ip),
 		router:     &Router{},
 		cmdRouter:  &CmdRouter{},
 		closeHooks: make([]CloseHandler, 0, 4),
 	}
 	return uConn
+}
+
+func NewBot(id int64, user *User) *UserConn {
+	return &UserConn{SId: id, user: user}
+}
+
+func (c *UserConn) User() *User {
+	return c.user
+}
+
+func (c *UserConn) IsGuest() bool {
+	return c.user.IsGuest()
 }
 
 func (c *UserConn) IsIgnored() bool {
@@ -111,10 +124,10 @@ func (c *UserConn) IsGhosted() bool {
 var fallbackLock = &lock.Lock{}
 
 func (c *UserConn) Lock() *lock.Lock {
-	if c == nil || c.User == nil {
+	if c == nil || c.user == nil {
 		return fallbackLock
 	}
-	return c.User.Lock
+	return c.user.Lock
 }
 
 func (c *UserConn) Id() int64 {
@@ -139,7 +152,7 @@ func (c *UserConn) AdminLevel() AdminLevel {
 	if c == nil {
 		return 0
 	}
-	return c.User.AdminLvl
+	return c.user.AdminLvl
 }
 
 func (c *UserConn) InLobby() int64 {
@@ -154,7 +167,7 @@ func (u *UserConn) UserId() int64 {
 	if u == nil {
 		return 0
 	}
-	return int64(u.User.Id)
+	return int64(u.user.Id)
 }
 
 // FilterName is used as a unique id when the actual id is not known
@@ -169,10 +182,10 @@ func (u *UserConn) FilterName() string {
 
 // Name is the user's raw name, not formatted for display
 func (u *UserConn) Name() string {
-	if u == nil || u.User == nil {
+	if u == nil || u.user == nil {
 		return ""
 	}
-	return string(u.User.Name)
+	return string(u.user.Name)
 }
 
 type Player struct {
@@ -188,10 +201,10 @@ func (c *UserConn) AddCloseHook(ctx context.Context, ch CloseHandler) error {
 	if ch == nil {
 		return nil
 	}
-	if err := c.User.Lock.Lock(ctx); err != nil {
+	if err := c.user.Lock.Lock(ctx); err != nil {
 		return err
 	}
-	defer c.User.Lock.Unlock()
+	defer c.user.Lock.Unlock()
 	if c.closed {
 		return errors.New("Connection closed")
 	}
@@ -203,10 +216,10 @@ func (c *UserConn) RemoveCloseHook(ctx context.Context, ch CloseHandler) error {
 	if ch == nil {
 		return nil
 	}
-	if err := c.User.Lock.Lock(ctx); err != nil {
+	if err := c.user.Lock.Lock(ctx); err != nil {
 		return err
 	}
-	defer c.User.Lock.Unlock()
+	defer c.user.Lock.Unlock()
 	for i, h := range c.closeHooks {
 		if ch == h {
 			last := len(c.closeHooks) - 1
@@ -220,25 +233,25 @@ func (c *UserConn) RemoveCloseHook(ctx context.Context, ch CloseHandler) error {
 
 // PrintName used for boat names and server logs
 func (c *UserConn) PrintName() string {
-	if c == nil || c.User == nil {
+	if c == nil || c.user == nil {
 		return "Missing User"
 	}
-	if c.Copy > 1 || c.User.Name == "Guest" {
-		return fmt.Sprintf("%s(%d)", c.User.Name, c.Copy)
+	if c.Copy > 1 || c.user.Name == "Guest" {
+		return fmt.Sprintf("%s(%d)", c.user.Name, c.Copy)
 	}
-	return string(c.User.Name)
+	return string(c.user.Name)
 }
 
 // UserName used for chat messages
 func (c *UserConn) UserName() UserName {
-	return UserName{From: c.Name(), Copy: c.Copy, Admin: c.AdminLevel(), Decoration: string(c.User.Decoration)}
+	return UserName{From: c.Name(), Copy: c.Copy, Admin: c.AdminLevel(), Decoration: string(c.user.Decoration)}
 }
 
 func (c *UserConn) Close() {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	c.User.Lock.MustLock(ctx)
-	defer c.User.Lock.Unlock()
+	c.user.Lock.MustLock(ctx)
+	defer c.user.Lock.Unlock()
 	chs := c.closeHooks
 	c.closeHooks = nil
 	c.closed = true
