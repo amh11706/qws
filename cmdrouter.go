@@ -7,6 +7,8 @@ import (
 	"github.com/amh11706/logger"
 )
 
+var cmdLogger = NewCommandLogger("commands", commandLog{})
+
 type CmdHandler func(ctx context.Context, c *UserConn, params []string) string
 
 type Command struct {
@@ -48,6 +50,9 @@ func (r *CmdRouter) ServeWS(ctx context.Context, c *UserConn, m *RawMessage) {
 		input = ""
 	}
 
+	log := cmdLogger.Start(c, cmd, input)
+	defer log.End(ctx)
+
 	match := r.findHandler(cmd)
 	var params []string
 	if len(match.Params) > 0 {
@@ -78,6 +83,9 @@ func (r *CmdRouter) ServeWS(ctx context.Context, c *UserConn, m *RawMessage) {
 
 	if res := match.Handler(ctx, c, params); len(res) > 0 {
 		c.SendInfo(ctx, res)
+		log.Status(res)
+	} else {
+		log.Status("Success")
 	}
 }
 

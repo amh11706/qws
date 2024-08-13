@@ -2,11 +2,11 @@ module github.com/amh11706/qws
 
 go 1.22.0
 
-// replace (
-// 	github.com/amh11706/logger => ../logger
-// 	github.com/amh11706/qdb => ../qdb
-// 	github.com/amh11706/qsql => ../qsql
-// )
+replace (
+	github.com/amh11706/logger => ../logger
+	github.com/amh11706/qdb => ../qdb
+	github.com/amh11706/qsql => ../qsql
+)
 
 require (
 	github.com/amh11706/logger v0.0.0-20240228210936-9df6d23b8ea9
