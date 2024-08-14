@@ -43,7 +43,7 @@ func (l *commandLog) Status(result string) {
 }
 
 func (l *commandLog) End(ctx context.Context) {
-	l.Duration = time.Since(l.startTime)
+	l.Duration = time.Since(l.startTime) / time.Millisecond
 	if l.Result == "" {
 		l.Result = "Error"
 	}
