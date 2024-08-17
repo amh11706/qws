@@ -43,6 +43,11 @@ const (
 	SearchNames
 	SearchNamesOnline
 	SetUserEmoji
+	WatchQueue
+	UnwatchQueue
+	JoinQueue
+	LeaveQueue
+	DeclineMatch
 )
 
 const (

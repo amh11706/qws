@@ -29,6 +29,8 @@ const (
 	Reload
 	SetUser
 	UpdateUser
+	QueueLength
+	QueueMatch
 )
 
 const (
