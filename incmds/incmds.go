@@ -47,7 +47,7 @@ const (
 	UnwatchQueue
 	JoinQueue
 	LeaveQueue
-	DeclineMatch
+	RateMap
 )
 
 const (
@@ -88,7 +88,6 @@ const (
 	DeclineBlind
 
 	ShuffleTeams
-	RateMap
 	SetMapData
 	SetMyJobbers
 	Vote
