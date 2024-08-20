@@ -30,6 +30,7 @@ const (
 	StatsTop
 	RanksUser
 	RanksTop
+	RanksTop3
 	MatchesUser
 	GetWinLoss
 	MatchData
