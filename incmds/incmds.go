@@ -49,6 +49,7 @@ const (
 	JoinQueue
 	LeaveQueue
 	RateMap
+	GetBotMatch
 )
 
 const (
