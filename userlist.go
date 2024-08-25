@@ -20,7 +20,7 @@ type MessageSender interface {
 	SendMessage(ctx context.Context, m *websocket.PreparedMessage)
 	Send(ctx context.Context, cmd outcmds.Cmd, data interface{})
 	SendInfo(ctx context.Context, data string)
-	SendRaw(ctx context.Context, data interface{})
+	SendRaw(ctx context.Context, data *Message)
 	Close()
 	Router() *Router
 	CmdRouter() *CmdRouter

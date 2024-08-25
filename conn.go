@@ -281,22 +281,32 @@ func (c *Conn) SendSync(ctx context.Context, cmd outcmds.Cmd, data interface{}) 
 	c.SendMessageSync(ctx, &Message{Cmd: cmd, Data: data})
 }
 
+const MaxJsonSize = 100000
+
 func PrepareJsonMessage(cmd outcmds.Cmd, data interface{}) (*websocket.PreparedMessage, error) {
 	m := &Message{Cmd: cmd, Data: data}
 	b, err := json.Marshal(m)
 	if err != nil {
 		return nil, err
 	}
+	if len(b) > MaxJsonSize {
+		id := AddMessage(b)
+		return websocket.NewPreparedMessage(websocket.TextMessage, []byte(fmt.Sprintf(`{"httpid":"%s"}`, id.String())))
+	}
 	return websocket.NewPreparedMessage(websocket.TextMessage, b)
 }
 
-func (c *Conn) SendRaw(ctx context.Context, data interface{}) {
+func (c *Conn) SendRaw(ctx context.Context, data *Message) {
 	if c == nil || c.closed {
 		return
 	}
 	b, err := json.Marshal(data)
 	if logger.Check(err) {
 		return
+	}
+	if len(b) > MaxJsonSize {
+		id := AddMessage(b)
+		b = []byte(fmt.Sprintf(`{"httpid":"%s"}`, id.String()))
 	}
 	m, err := websocket.NewPreparedMessage(websocket.TextMessage, b)
 	if logger.Check(err) {

@@ -12,6 +12,7 @@ require (
 	github.com/amh11706/logger v0.0.0-20240228210936-9df6d23b8ea9
 	github.com/amh11706/qdb v0.0.0-20201108153937-e79024dfa7f6
 	github.com/amh11706/qsql v0.0.0-20220123094420-b9b581d9642f
+	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.1
 )
 
