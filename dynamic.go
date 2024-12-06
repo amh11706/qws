@@ -5,54 +5,46 @@ import (
 	"encoding/json"
 	"log"
 	"reflect"
-	"runtime"
 
 	"github.com/amh11706/logger"
 )
 
-type DynamicHandler struct {
-	elType reflect.Type
-	f      reflect.Value
+type DynamicFunc[In any, Out any] func(context.Context, *UserConn, In) Out
+
+type DynamicHandler[T any, R any] struct {
+	f DynamicFunc[T, R]
 }
 
-func (h *DynamicHandler) ServeWS(ctx context.Context, c *UserConn, m *RawMessage) {
-	var out []reflect.Value
-	if h.elType == nil {
-		out = h.f.Call([]reflect.Value{reflect.ValueOf(ctx), reflect.ValueOf(c)})
-	} else {
-		i := reflect.New(h.elType).Interface()
-		err := json.Unmarshal(m.Data, i)
+func (h *DynamicHandler[T, R]) ServeWS(ctx context.Context, c *UserConn, m *RawMessage) {
+	in := new(T)
+	if len(m.Data) > 0 {
+		err := json.Unmarshal(m.Data, in)
 		if logger.Check(err) {
-			f := runtime.FuncForPC(h.f.Pointer())
-			file, line := runtime.FuncForPC(h.f.Pointer()).FileLine(f.Entry())
 			log.Printf(
-				"\x1b[36m%s\x1b[0m invalid ws parameter for func at %s:%d %v\n",
-				c.PrintName(), file, line, string(m.Data),
+				"\x1b[36m%s\x1b[0m invalid ws parameter for cmd %d: %v\n",
+				c.PrintName(), m.Cmd, string(m.Data),
 			)
 			return
 		}
-		out = h.f.Call([]reflect.Value{reflect.ValueOf(ctx), reflect.ValueOf(c), reflect.ValueOf(i).Elem()})
 	}
+	out := h.f(ctx, c, *in)
 
-	if m.Id > 0 && len(out) > 0 {
-		c.SendRaw(ctx, &Message{Id: m.Id, Data: out[0].Interface()})
+	outValue := reflect.ValueOf(out)
+	nilOutput := outValue.IsZero()
+	if m.Id > 0 && !nilOutput {
+		c.SendRaw(ctx, &Message{Id: m.Id, Data: out})
 		m.Id = 0
 	} else if m.Id > 0 {
 		c.SendRaw(ctx, &Message{Id: m.Id})
 		m.Id = 0
-	} else if len(out) > 0 {
-		r := out[0].Interface()
-		if v, ok := r.(string); ok && v != "" {
-			c.SendInfo(ctx, v)
+	} else if !nilOutput {
+		if outValue.Kind() == reflect.String {
+			c.SendInfo(ctx, outValue.String())
 		}
 	}
 }
 
-func NewDynamicHandler(f interface{}) *DynamicHandler {
-	h := &DynamicHandler{f: reflect.ValueOf(f)}
-	t := h.f.Type()
-	if t.NumIn() > 2 {
-		h.elType = t.In(2)
-	}
+func NewDynamicHandler[T any, R any](f DynamicFunc[T, R]) *DynamicHandler[T, R] {
+	h := &DynamicHandler[T, R]{f: f}
 	return h
 }

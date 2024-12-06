@@ -67,7 +67,7 @@ func (r *Router) Handle(command incmds.Cmd, h Handler) error {
 	return nil
 }
 
-func (r *Router) HandleDynamic(command incmds.Cmd, h interface{}) error {
+func HandleDynamic[T any, R any](r *Router, command incmds.Cmd, h DynamicFunc[T, R]) error {
 	return r.Handle(command, NewDynamicHandler(h))
 }
 
