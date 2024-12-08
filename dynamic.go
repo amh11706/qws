@@ -29,18 +29,11 @@ func (h *DynamicHandler[T, R]) ServeWS(ctx context.Context, c *UserConn, m *RawM
 	}
 	out := h.f(ctx, c, *in)
 
-	outValue := reflect.ValueOf(out)
-	nilOutput := outValue.IsZero()
-	if m.Id > 0 && !nilOutput {
+	if m.Id > 0 {
 		c.SendRaw(ctx, &Message{Id: m.Id, Data: out})
 		m.Id = 0
-	} else if m.Id > 0 {
-		c.SendRaw(ctx, &Message{Id: m.Id})
-		m.Id = 0
-	} else if !nilOutput {
-		if outValue.Kind() == reflect.String {
-			c.SendInfo(ctx, outValue.String())
-		}
+	} else if outValue := reflect.ValueOf(out); outValue.Kind() == reflect.String {
+		c.SendInfo(ctx, outValue.String())
 	}
 }
 

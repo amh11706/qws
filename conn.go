@@ -341,6 +341,9 @@ func NewInfo(m string) *Info {
 }
 
 func (c *Conn) SendInfo(ctx context.Context, m string) {
+	if len(m) == 0 {
+		return
+	}
 	c.Send(ctx, outcmds.ChatMessage, &Info{Message: m})
 }
 
