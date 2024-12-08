@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"log"
-	"reflect"
 
 	"github.com/amh11706/logger"
 )
@@ -32,8 +31,8 @@ func (h *DynamicHandler[T, R]) ServeWS(ctx context.Context, c *UserConn, m *RawM
 	if m.Id > 0 {
 		c.SendRaw(ctx, &Message{Id: m.Id, Data: out})
 		m.Id = 0
-	} else if outValue := reflect.ValueOf(out); outValue.Kind() == reflect.String {
-		c.SendInfo(ctx, outValue.String())
+	} else if outStr, ok := any(out).(string); ok {
+		c.SendInfo(ctx, outStr)
 	}
 }
 

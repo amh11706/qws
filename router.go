@@ -71,10 +71,6 @@ func HandleDynamic[T any, R any](r *Router, command incmds.Cmd, h DynamicFunc[T,
 	return r.Handle(command, NewDynamicHandler(h))
 }
 
-func (r *Router) HandleReturning(command incmds.Cmd, h func(ctx context.Context, c *UserConn, m *RawMessage) interface{}) error {
-	return r.Handle(command, ReturningFunc(h))
-}
-
 func (r *Router) RemoveCommand(command incmds.Cmd) {
 	if r == nil {
 		return
