@@ -12,6 +12,7 @@ import (
 	"github.com/amh11706/qws/incmds"
 	"github.com/amh11706/qws/lock"
 	"github.com/amh11706/qws/outcmds"
+	"github.com/amh11706/qws/safe"
 	"github.com/gorilla/websocket"
 )
 
@@ -89,6 +90,10 @@ func NewUserConn(user *User, conn *websocket.Conn, ip string) *UserConn {
 		cmdRouter:  &CmdRouter{},
 		closeHooks: make([]CloseHandler, 0, 4),
 	}
+	conn.SetCloseHandler(func(code int, text string) error {
+		uConn.Close()
+		return nil
+	})
 	return uConn
 }
 
@@ -248,7 +253,7 @@ func (c *UserConn) UserName() UserName {
 }
 
 func (c *UserConn) Close() {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
 	c.user.Lock.MustLock(ctx)
 	defer c.user.Lock.Unlock()
@@ -256,7 +261,11 @@ func (c *UserConn) Close() {
 	c.closeHooks = nil
 	c.closed = true
 	for i := len(chs) - 1; i >= 0; i-- {
-		(*chs[i])(ctx, c)
+		safe.GoWithValue(func(h CloseHandler) {
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+			(*h)(ctx, c)
+		}, chs[i], nil)
 	}
 	c.conn.Close()
 }
