@@ -33,20 +33,30 @@ type Info struct {
 	Message string `json:"message"`
 }
 
+const connectionTimeout = 10 * time.Second
+
 type Conn struct {
-	conn     *websocket.Conn
-	sendChan chan *websocket.PreparedMessage
-	closed   bool
-	ip       string
+	conn                *websocket.Conn
+	sendChan            chan *websocket.PreparedMessage
+	closed              bool
+	ip                  string
+	pingTimer           *time.Ticker
+	lastMessageReceived time.Time
 }
 
 func NewConn(conn *websocket.Conn, ip string) *Conn {
-	c := &Conn{conn: conn, sendChan: make(chan *websocket.PreparedMessage, 50), ip: ip}
+	c := &Conn{
+		conn:                conn,
+		sendChan:            make(chan *websocket.PreparedMessage, 50),
+		ip:                  ip,
+		lastMessageReceived: time.Now(),
+		pingTimer:           time.NewTicker(connectionTimeout / 2),
+	}
 	return c
 }
 
 func (c *Conn) ListenWrite(ctx context.Context) {
-	go c.listenWrite(ctx, 10*time.Second)
+	go c.listenWrite(ctx)
 }
 
 type UserInfoer interface {
@@ -90,10 +100,6 @@ func NewUserConn(user *User, conn *websocket.Conn, ip string) *UserConn {
 		cmdRouter:  &CmdRouter{},
 		closeHooks: make([]CloseHandler, 0, 4),
 	}
-	conn.SetCloseHandler(func(code int, text string) error {
-		uConn.Close()
-		return nil
-	})
 	return uConn
 }
 
@@ -211,7 +217,7 @@ func (c *UserConn) AddCloseHook(ctx context.Context, ch CloseHandler) error {
 	}
 	defer c.user.Lock.Unlock()
 	if c.closed {
-		return errors.New("Connection closed")
+		return errors.New("connection closed")
 	}
 	c.closeHooks = append(c.closeHooks, ch)
 	return nil
@@ -262,7 +268,7 @@ func (c *UserConn) Close() {
 	c.closed = true
 	for i := len(chs) - 1; i >= 0; i-- {
 		safe.GoWithValue(func(h CloseHandler) {
-			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 			defer cancel()
 			(*h)(ctx, c)
 		}, chs[i], nil)
@@ -329,7 +335,7 @@ func (c *Conn) SendMessage(ctx context.Context, m *websocket.PreparedMessage) {
 		return
 	}
 	if len(c.sendChan) == cap(c.sendChan) {
-		logger.CheckStack(errors.New("sendChan is full."))
+		logger.CheckStack(errors.New("sendChan is full"))
 		c.Close()
 	} else {
 		c.sendChan <- m
@@ -369,6 +375,8 @@ func (uConn *UserConn) ListenRead(ctx context.Context) {
 		}
 
 		go uConn.handleMessage(ctx, m)
+		uConn.pingTimer.Reset(connectionTimeout / 2)
+		uConn.lastMessageReceived = time.Now()
 	}
 }
 
@@ -385,24 +393,31 @@ func (uConn *UserConn) handleMessage(ctx context.Context, m *RawMessage) {
 	cancel()
 }
 
-func (c *Conn) listenWrite(ctx context.Context, timeout time.Duration) {
-	lastResponse := time.Now()
+var pingMessage, _ = websocket.NewPreparedMessage(websocket.PingMessage, []byte("keepalive"))
+
+func (c *Conn) listenWrite(ctx context.Context) {
 	c.conn.SetPongHandler(func(msg string) error {
-		lastResponse = time.Now()
+		c.lastMessageReceived = time.Now()
 		return nil
 	})
 
 	done := ctx.Done()
-	timer := time.After(timeout / 2)
 	for {
-		if time.Since(lastResponse) > timeout {
+		if time.Since(c.lastMessageReceived) > connectionTimeout {
 			log.Println("Connection closed for missed pong")
 			c.Close()
 			return
 		}
 		select {
-		case <-timer:
-			break
+		case <-c.pingTimer.C:
+			err := c.conn.WritePreparedMessage(pingMessage)
+			if err != nil {
+				c.Close()
+				if err.Error() != "websocket: close sent" {
+					log.Println("Connection closed for ping error:", err)
+				}
+				return
+			}
 		case m := <-c.sendChan:
 			if !c.closed && logger.Check(c.conn.WritePreparedMessage(m)) {
 				c.Close()
@@ -411,15 +426,5 @@ func (c *Conn) listenWrite(ctx context.Context, timeout time.Duration) {
 		case <-done:
 			return
 		}
-
-		err := c.conn.WriteMessage(websocket.PingMessage, []byte("keepalive"))
-		if err != nil {
-			c.Close()
-			if err.Error() != "websocket: close sent" {
-				log.Println("Connection closed for ping error:", err)
-			}
-			return
-		}
-		timer = time.After(timeout / 2)
 	}
 }
