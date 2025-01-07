@@ -9,7 +9,7 @@ import (
 
 var cmdLogger = NewCommandLogger("commands", commandLog{})
 
-type CmdHandler func(ctx context.Context, c *UserConn, params []string) string
+type CmdHandler func(ctx context.Context, c UserConner, params []string) string
 
 type Command struct {
 	Base    string     `json:"base"`
@@ -89,7 +89,7 @@ func (r *CmdRouter) ServeWS(ctx context.Context, c *UserConn, m *RawMessage) {
 	}
 }
 
-func sendList(ctx context.Context, c *UserConn, _ []string) string {
+func sendList(ctx context.Context, c UserConner, _ []string) string {
 	return "Unknown command. See the list to the left of the input box for valid commands."
 }
 

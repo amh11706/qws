@@ -143,7 +143,7 @@ func LookupIp(ctx context.Context, ip string) string {
 	return "Known users: " + strings.Join(matches, ", ")
 }
 
-func LookupUser(ctx context.Context, c *UserConn, name string) string {
+func LookupUser(ctx context.Context, c UserConner, name string) string {
 	var id int64
 	err := qdb.DB.GetContext(ctx, &id, "SELECT id FROM users WHERE username=?", name)
 	if logger.CheckP(err, "Lookup user "+name+":") || id == 0 {
@@ -188,14 +188,14 @@ func (u *User) Unblock(ctx context.Context, name string) {
 	u.Lock.Unlock()
 }
 
-func SetUserDecoration(ctx context.Context, c *UserConn, decoration string) {
-	if c.user.Decoration == "" {
+func SetUserDecoration(ctx context.Context, c UserConner, decoration string) {
+	if c.User().Decoration == "" {
 		logger.Error("Set invalid user decoration for user " + c.Name() + ": " + decoration)
 		return
 	}
 	_, err := qdb.DB.ExecContext(ctx, "UPDATE users SET decoration=? WHERE id=?", decoration, c.UserId())
 	logger.CheckP(err, "Set user decoration for user "+c.Name())
-	c.user.Decoration = qsql.LazyString(decoration)
+	c.User().Decoration = qsql.LazyString(decoration)
 }
 
 func FormatName(n string) string {

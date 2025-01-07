@@ -8,7 +8,7 @@ import (
 	"github.com/amh11706/logger"
 )
 
-type DynamicFunc[In any, Out any] func(context.Context, *UserConn, In) Out
+type DynamicFunc[In any, Out any] func(context.Context, UserConner, In) Out
 
 type DynamicHandler[T any, R any] struct {
 	f DynamicFunc[T, R]
