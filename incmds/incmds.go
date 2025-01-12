@@ -93,4 +93,7 @@ const (
 	SetMapData
 	SetMyJobbers
 	Vote
+
+	BASettings
+	BASettingsGet
 )

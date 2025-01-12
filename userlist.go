@@ -83,14 +83,14 @@ func (l UserList[T]) Broadcast(ctx context.Context, cmd outcmds.Cmd, data interf
 // BroadcastExcept sends the provided message to every user in the list except
 // the provided user.
 func (l UserList[T]) BroadcastExcept(ctx context.Context, cmd outcmds.Cmd, data interface{}, e UserConner) {
-	l.BroadcastFilter(ctx, cmd, data, func(u UserConner) bool {
+	l.BroadcastFilter(ctx, cmd, data, func(u T) bool {
 		return u.Id() != e.Id()
 	})
 }
 
 // BroadcastFilter sends the provided message to every user in the list for which
 // the provided filter func returns true.
-func (l UserList[T]) BroadcastFilter(ctx context.Context, cmd outcmds.Cmd, data interface{}, filter func(UserConner) bool) {
+func (l UserList[T]) BroadcastFilter(ctx context.Context, cmd outcmds.Cmd, data interface{}, filter func(T) bool) {
 	m, err := PrepareJsonMessage(cmd, data)
 	if logger.Check(err) {
 		return

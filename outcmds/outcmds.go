@@ -66,4 +66,6 @@ const (
 	OfferBlind
 
 	LobbyStatus
+
+	BASettings
 )
