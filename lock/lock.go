@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/amh11706/logger"
+	"github.com/amh11706/qws/safe"
 )
 
 type Lock struct {
@@ -38,18 +39,22 @@ func (l *Lock) Lock(ctx context.Context) error {
 	case <-ctx.Done():
 		return ErrorCtxCancelled
 	case <-l.lock:
-		time.AfterFunc(5*time.Second, l.check(ctx))
+		safe.Go(func() { l.check(ctx) }, nil)
 		l.ctx = ctx
 		return nil
 	}
 }
 
-func (l *Lock) check(ctx context.Context) func() {
-	return func() {
-		if l.ctx == ctx {
-			l.Unlock()
-			logger.CheckStack(fmt.Errorf("Released expired lock!"))
-		}
+func (l *Lock) check(ctx context.Context) {
+	doneChan := ctx.Done()
+	if doneChan == nil {
+		time.Sleep(5 * time.Second)
+	} else {
+		<-doneChan
+	}
+	if l.ctx == ctx {
+		l.Unlock()
+		logger.CheckStack(fmt.Errorf("Released expired lock!"))
 	}
 }
 
