@@ -96,4 +96,6 @@ const (
 
 	BASettings
 	BASettingsGet
+	BADamageReport
+	BAToggleSink
 )
