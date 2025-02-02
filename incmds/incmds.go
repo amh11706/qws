@@ -98,4 +98,6 @@ const (
 	BASettingsGet
 	BADamageReport
 	BAToggleSink
+	BAAddBoat
+	BARemoveBoat
 )
