@@ -100,4 +100,7 @@ const (
 	BAToggleSink
 	BAAddBoat
 	BARemoveBoat
+	BASwapBoat
+	BACopyBoatTo
+	BACopyBoatFrom
 )
