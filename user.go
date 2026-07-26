@@ -69,6 +69,9 @@ type User struct {
 	Blocked    map[string]struct{}
 	Invites    []*Invitation
 	Lock       *lock.Lock
+	// chat is the shared chat rate budget for every connection of this
+	// account. Created on first use, see AllowChat.
+	chat *chatLimiter
 }
 
 func (u *User) MarshalJSON() ([]byte, error) {
