@@ -1,6 +1,7 @@
 package qws
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -44,6 +45,22 @@ func TestChatLimiterDoesNotAccumulateBeyondBurst(t *testing.T) {
 	}
 	if l.allow(now) {
 		t.Fatal("idling banked more than chatBurst messages")
+	}
+}
+
+func TestChatTooLong(t *testing.T) {
+	if ChatTooLong(strings.Repeat("a", MaxChatRunes)) {
+		t.Fatal("a message exactly at the limit was rejected")
+	}
+	if !ChatTooLong(strings.Repeat("a", MaxChatRunes+1)) {
+		t.Fatal("a message over the limit was accepted")
+	}
+
+	// The client counts UTF-16 units, so it would already have stopped the user
+	// well before MaxChatRunes astral emoji. Counting runes here must not be
+	// stricter than that, or we reject text the client was happy to send.
+	if ChatTooLong(strings.Repeat("\U0001F986", MaxChatRunes)) {
+		t.Fatal("multibyte characters were counted as more than one rune")
 	}
 }
 

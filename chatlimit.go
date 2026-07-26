@@ -1,8 +1,10 @@
 package qws
 
 import (
+	"fmt"
 	"sync"
 	"time"
+	"unicode/utf8"
 )
 
 // Chat is rate limited separately from everything else on the socket. Gameplay
@@ -18,6 +20,20 @@ const (
 
 // ChatRateMessage is shown to a user who has run their chat budget out.
 const ChatRateMessage = "You are sending messages too quickly. Please slow down."
+
+// MaxChatRunes matches the maxlength on the client's chat input, so a normal
+// client can never trip it. Runes rather than bytes: the browser counts UTF-16
+// units, where an astral emoji costs 2 and here it costs 1, which keeps the
+// server from rejecting anything the client was willing to send.
+const MaxChatRunes = 200
+
+// ChatTooLongMessage is shown to a user whose message exceeds MaxChatRunes.
+var ChatTooLongMessage = fmt.Sprintf("That message is too long. Chat is limited to %d characters.", MaxChatRunes)
+
+// ChatTooLong reports whether m is over the chat length limit.
+func ChatTooLong(m string) bool {
+	return utf8.RuneCountInString(m) > MaxChatRunes
+}
 
 // chatLimiter is a token bucket. It is only reachable through User.AllowChat,
 // which creates it on first use.

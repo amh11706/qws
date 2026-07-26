@@ -44,6 +44,18 @@ type Conn struct {
 	lastMessageReceived time.Time
 }
 
+// MaxHandshakeSize bounds the login frame, which is read before the connection
+// is authenticated. It only ever carries a token and a client version.
+const MaxHandshakeSize = 4 * 1024
+
+// MaxMessageSize bounds every frame after the handshake. The largest legitimate
+// message is a map editor save: the biggest editor grid is 31x41, and the
+// client keeps up to 100 undo and 100 redo entries, so a save where every one
+// of those entries touched every tile is roughly 1271 * 26 * 200 = 6.6MB.
+// Exceeding this closes the connection, so it is set above that worst case
+// rather than near the size of a typical save.
+const MaxMessageSize = 8 * 1024 * 1024
+
 func NewConn(conn *websocket.Conn, ip string) *Conn {
 	c := &Conn{
 		conn:                conn,
@@ -51,6 +63,10 @@ func NewConn(conn *websocket.Conn, ip string) *Conn {
 		ip:                  ip,
 		lastMessageReceived: time.Now(),
 		pingTimer:           time.NewTicker(connectionTimeout / 2),
+	}
+	// Bots are built with a nil conn.
+	if conn != nil {
+		conn.SetReadLimit(MaxMessageSize)
 	}
 	return c
 }
