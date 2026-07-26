@@ -2,6 +2,8 @@ package qws
 
 import (
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -82,5 +84,76 @@ func TestAllowChatSharedAcrossConnectionsOfOneUser(t *testing.T) {
 	}
 	if used > chatBurst {
 		t.Fatalf("two connections got %d messages, want at most %d", used, chatBurst)
+	}
+}
+
+// TestChatLimiterConcurrentGrantsAreExact stands in for the race detector,
+// which needs cgo and a C compiler that is not available here. Each round uses
+// a fresh limiter and releases every goroutine at once, so all of them contend
+// on the same handful of tokens. Unsynchronised access shows up as over
+// granting, either from a lost decrement or from several goroutines each
+// seeing a zero last and resetting the bucket to full.
+func TestChatLimiterConcurrentGrantsAreExact(t *testing.T) {
+	const rounds, senders = 300, 64
+
+	for round := 0; round < rounds; round++ {
+		l := &chatLimiter{}
+		now := time.Now()
+		var granted atomic.Int64
+		var wg sync.WaitGroup
+		start := make(chan struct{})
+
+		wg.Add(senders)
+		for i := 0; i < senders; i++ {
+			go func() {
+				defer wg.Done()
+				<-start
+				if l.allow(now) {
+					granted.Add(1)
+				}
+			}()
+		}
+		close(start)
+		wg.Wait()
+
+		if got := granted.Load(); got != chatBurst {
+			t.Fatalf("round %d: %d simultaneous senders were granted %d messages, want exactly %d",
+				round, senders, got, chatBurst)
+		}
+	}
+}
+
+// TestAllowChatLazyInitIsSynchronised drives the User.chat lazy creation from
+// many goroutines at once on a fresh User. The limiter itself is covered above,
+// but that test calls allow directly, so without this one nothing concurrently
+// exercises the nil check that creates it. Run under -race.
+func TestAllowChatLazyInitIsSynchronised(t *testing.T) {
+	const rounds, senders = 200, 64
+
+	for round := 0; round < rounds; round++ {
+		u := &User{Name: "Somebody"}
+		var granted atomic.Int64
+		var wg sync.WaitGroup
+		start := make(chan struct{})
+
+		wg.Add(senders)
+		for i := 0; i < senders; i++ {
+			go func() {
+				defer wg.Done()
+				<-start
+				if u.AllowChat() {
+					granted.Add(1)
+				}
+			}()
+		}
+		close(start)
+		wg.Wait()
+
+		// A torn lazy init would hand out more than one limiter, so the
+		// senders would collectively get more than a single bucket's worth.
+		if got := granted.Load(); got != chatBurst {
+			t.Fatalf("round %d: %d senders sharing one user were granted %d messages, want exactly %d",
+				round, senders, got, chatBurst)
+		}
 	}
 }
