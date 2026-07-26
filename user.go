@@ -53,13 +53,16 @@ func (e *Email) UnmarshalJSON(data []byte) error {
 }
 
 type User struct {
-	Id         qsql.LazyInt    `db:"id"`
+	// Id, Inventory, AdminLvl and Locked are server owned: they are never
+	// accepted from a request body, only from the database.
+	Id         qsql.LazyInt    `json:"-" db:"id"`
 	Name       qsql.LazyString `db:"username"`
 	Decoration qsql.LazyString `db:"decoration"`
 	Pass       qsql.LazyString `json:"password" db:"password"`
-	Inventory  qsql.LazyInt    `db:"inventory"`
+	Inventory  qsql.LazyInt    `json:"-" db:"inventory"`
 	Email      Email           `db:"email"`
-	AdminLvl   AdminLevel      `db:"admin_level"`
+	AdminLvl   AdminLevel      `json:"-" db:"admin_level"`
+	Locked     qsql.LazyBool   `json:"-" db:"locked"`
 	Token      qsql.LazyString `db:"token"`
 	TokenSent  qsql.LazyUnix   `db:"token_sent"`
 	Online     map[string]UserList[*UserConn]
