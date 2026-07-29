@@ -14,11 +14,11 @@ import (
 const lockReleaseGrace = 200 * time.Millisecond
 
 type Lock struct {
-	mu     sync.Mutex
-	lock   chan struct{}
-	ctx    context.Context
-	depth  byte
-	owner  string
+	mu    sync.Mutex
+	lock  chan struct{}
+	ctx   context.Context
+	depth byte
+	owner string
 }
 
 func (l *Lock) LockWithLabel(ctx context.Context, label string) error {
@@ -78,6 +78,13 @@ func (l *Lock) check(ctx context.Context) {
 
 func (l *Lock) MustLock(ctx context.Context) {
 	err := l.Lock(ctx)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (l *Lock) MustLockWithLabel(ctx context.Context, label string) {
+	err := l.LockWithLabel(ctx, label)
 	if err != nil {
 		panic(err)
 	}
