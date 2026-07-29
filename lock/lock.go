@@ -11,27 +11,17 @@ import (
 	"github.com/amh11706/qws/safe"
 )
 
-const lockReleaseGrace = time.Second
+const lockReleaseGrace = 200 * time.Millisecond
 
 type Lock struct {
-	mu    sync.Mutex
-	lock  chan struct{}
-	ctx   context.Context
-	depth byte
+	mu     sync.Mutex
+	lock   chan struct{}
+	ctx    context.Context
+	depth  byte
+	owner  string
 }
 
-func NewLock() *Lock {
-	l := &Lock{lock: make(chan struct{}, 1)}
-	l.lock <- struct{}{}
-	return l
-}
-
-var (
-	ErrorNilLock      = errors.New("Cannot lock nil lock")
-	ErrorCtxCancelled = errors.New("Failed to get lock: ctx cancelled")
-)
-
-func (l *Lock) Lock(ctx context.Context) error {
+func (l *Lock) LockWithLabel(ctx context.Context, label string) error {
 	if l == nil || l.lock == nil {
 		return ErrorNilLock
 	}
@@ -52,8 +42,24 @@ func (l *Lock) Lock(ctx context.Context) error {
 		defer l.mu.Unlock()
 		safe.Go(func() { l.check(ctx) }, nil)
 		l.ctx = ctx
+		l.owner = label
 		return nil
 	}
+}
+
+func NewLock() *Lock {
+	l := &Lock{lock: make(chan struct{}, 1)}
+	l.lock <- struct{}{}
+	return l
+}
+
+var (
+	ErrorNilLock      = errors.New("Cannot lock nil lock")
+	ErrorCtxCancelled = errors.New("Failed to get lock: ctx cancelled")
+)
+
+func (l *Lock) Lock(ctx context.Context) error {
+	return l.LockWithLabel(ctx, "")
 }
 
 func (l *Lock) check(ctx context.Context) {
@@ -66,7 +72,7 @@ func (l *Lock) check(ctx context.Context) {
 	defer l.mu.Unlock()
 	if l.ctx == ctx {
 		l.releaseLocked()
-		logger.CheckStack(fmt.Errorf("Released expired lock after grace period"))
+		logger.CheckStack(fmt.Errorf("released lock %p after grace period: owner=%q ctx=%T canceled=%v depth=%d", l, l.owner, ctx, ctx.Err(), l.depth))
 	}
 }
 
@@ -96,6 +102,7 @@ func (l *Lock) Unlock() {
 
 func (l *Lock) releaseLocked() {
 	l.ctx = nil
+	l.owner = ""
 	select {
 	case l.lock <- struct{}{}:
 	default:
