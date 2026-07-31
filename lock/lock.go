@@ -66,6 +66,13 @@ func (l *Lock) check(ctx context.Context) {
 	if ctx == nil {
 		return
 	}
+	done := ctx.Done()
+	if done == nil {
+		logger.CheckStack(fmt.Errorf("lock %p acquired with non-cancelable context", l))
+		return
+	}
+
+	<-done
 	time.Sleep(lockReleaseGrace)
 
 	l.mu.Lock()
