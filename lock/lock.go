@@ -34,13 +34,17 @@ func (l *Lock) LockWithLabel(ctx context.Context, label string) error {
 	}
 	l.mu.Unlock()
 
+	done := ctx.Done()
 	select {
-	case <-ctx.Done():
+	case <-done:
 		return ErrorCtxCancelled
 	case <-l.lock:
 		l.mu.Lock()
 		defer l.mu.Unlock()
-		safe.Go(func() { l.check(ctx) }, nil)
+		if done == nil {
+			logger.CheckStack(fmt.Errorf("lock %p acquired with non-cancelable context: owner=%q", l, label))
+		}
+		safe.Go(func() { l.check(ctx, done) }, nil)
 		l.ctx = ctx
 		l.owner = label
 		return nil
@@ -62,13 +66,8 @@ func (l *Lock) Lock(ctx context.Context) error {
 	return l.LockWithLabel(ctx, "")
 }
 
-func (l *Lock) check(ctx context.Context) {
-	if ctx == nil {
-		return
-	}
-	done := ctx.Done()
-	if done == nil {
-		logger.CheckStack(fmt.Errorf("lock %p acquired with non-cancelable context", l))
+func (l *Lock) check(ctx context.Context, done <-chan struct{}) {
+	if ctx == nil || done == nil {
 		return
 	}
 

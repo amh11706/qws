@@ -47,7 +47,7 @@ func NewFilteredUserList[T UserInfoer](m map[int64]T, al AdminLevel) slice.Defau
 }
 
 func (l UserList[T]) FilterForAdminLevel(al AdminLevel) slice.DefaultVisibleCheckerMap[int64, T] {
-	return NewFilteredUserList[T](l, al)
+	return NewFilteredUserList(l, al)
 }
 
 func (l UserList[T]) GroupByAdminLevel() map[AdminLevel]UserList[T] {

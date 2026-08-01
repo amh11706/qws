@@ -1,6 +1,6 @@
 module github.com/amh11706/qws
 
-go 1.22.0
+go 1.25.5
 
 replace (
 	github.com/amh11706/logger => ../logger

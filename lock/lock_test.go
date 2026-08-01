@@ -19,7 +19,7 @@ func TestLockWaitsBeforeReleasingCanceledContext(t *testing.T) {
 
 	acquired := make(chan struct{})
 	go func() {
-		if err := l.Lock(context.Background()); err != nil {
+		if err := l.Lock(t.Context()); err != nil {
 			t.Errorf("second lock acquire returned error: %v", err)
 			return
 		}
@@ -55,7 +55,7 @@ func TestLockReleasesCanceledContextAfterShortGrace(t *testing.T) {
 
 	acquired := make(chan struct{})
 	go func() {
-		if err := l.Lock(context.Background()); err != nil {
+		if err := l.Lock(t.Context()); err != nil {
 			t.Errorf("second lock acquire returned error: %v", err)
 			return
 		}
@@ -78,7 +78,7 @@ func TestLockReleasesCanceledContextAfterShortGrace(t *testing.T) {
 
 func TestLockRecordsOwnerLabel(t *testing.T) {
 	l := NewLock()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	if err := l.LockWithLabel(ctx, "test-label"); err != nil {
 		t.Fatalf("lock acquire failed: %v", err)
@@ -92,7 +92,7 @@ func TestLockRecordsOwnerLabel(t *testing.T) {
 
 func TestLockUsesEmptyLabelByDefault(t *testing.T) {
 	l := NewLock()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	if err := l.Lock(ctx); err != nil {
 		t.Fatalf("lock acquire failed: %v", err)
