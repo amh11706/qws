@@ -228,7 +228,7 @@ func (c *UserConn) AddCloseHook(ctx context.Context, ch CloseHandler) error {
 	if ch == nil {
 		return nil
 	}
-	if err := c.user.Lock.Lock(ctx); err != nil {
+	if err := c.user.Lock.LockWithLabel(ctx, "qws.add-close-hook"); err != nil {
 		return err
 	}
 	defer c.user.Lock.Unlock()
@@ -243,7 +243,7 @@ func (c *UserConn) RemoveCloseHook(ctx context.Context, ch CloseHandler) error {
 	if ch == nil {
 		return nil
 	}
-	if err := c.user.Lock.Lock(ctx); err != nil {
+	if err := c.user.Lock.LockWithLabel(ctx, "qws.remove-close-hook"); err != nil {
 		return err
 	}
 	defer c.user.Lock.Unlock()
@@ -277,7 +277,7 @@ func (c *UserConn) UserName() UserName {
 func (c *UserConn) Close() {
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
-	c.user.Lock.MustLock(ctx)
+	c.user.Lock.MustLockWithLabel(ctx, "qws.conn-close")
 	defer c.user.Lock.Unlock()
 	chs := c.closeHooks
 	c.closeHooks = nil

@@ -79,7 +79,7 @@ func (u *User) MarshalJSON() ([]byte, error) {
 }
 
 func (u *User) RemoveInvite(ctx context.Context, invite *Invitation) {
-	u.Lock.MustLock(ctx)
+	u.Lock.MustLockWithLabel(ctx, "qws.remove-invite")
 	defer u.Lock.Unlock()
 	newInvites := make([]*Invitation, 0, len(u.Invites)-1)
 	for _, inv := range u.Invites {
@@ -176,20 +176,20 @@ func (u *User) IsBlocked(ctx context.Context, c UserConner) bool {
 	if u.Blocked == nil {
 		return false
 	}
-	u.Lock.MustLock(ctx)
+	u.Lock.MustLockWithLabel(ctx, "qws.is-blocked")
 	_, b := u.Blocked[c.Name()]
 	u.Lock.Unlock()
 	return b
 }
 
 func (u *User) Block(ctx context.Context, name string) {
-	u.Lock.MustLock(ctx)
+	u.Lock.MustLockWithLabel(ctx, "qws.block")
 	u.Blocked[name] = struct{}{}
 	u.Lock.Unlock()
 }
 
 func (u *User) Unblock(ctx context.Context, name string) {
-	u.Lock.MustLock(ctx)
+	u.Lock.MustLockWithLabel(ctx, "qws.unblock")
 	delete(u.Blocked, name)
 	u.Lock.Unlock()
 }

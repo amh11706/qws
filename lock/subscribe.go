@@ -32,7 +32,7 @@ func NewSubscribable[T any]() *Subscribable[T] {
 }
 
 func (s *Subscribable[T]) Publish(ctx context.Context, v T) error {
-	if err := s.lock.Lock(ctx); err != nil {
+	if err := s.lock.LockWithLabel(ctx, "qws.subscribe.publish"); err != nil {
 		return err
 	}
 	defer s.lock.Unlock()
@@ -52,7 +52,7 @@ func (s *Subscribable[T]) Publish(ctx context.Context, v T) error {
 }
 
 func (s *Subscribable[T]) Subscribe(ctx context.Context, cb func(T)) (*Subscription[T], error) {
-	if err := s.lock.Lock(ctx); err != nil {
+	if err := s.lock.LockWithLabel(ctx, "qws.subscribe.subscribe"); err != nil {
 		return nil, err
 	}
 	defer s.lock.Unlock()
@@ -71,7 +71,7 @@ func (s *Subscribable[T]) Subscribe(ctx context.Context, cb func(T)) (*Subscript
 }
 
 func (s *Subscribable[T]) Unsubscribe(ctx context.Context, sub *Subscription[T]) error {
-	if err := s.lock.Lock(ctx); err != nil {
+	if err := s.lock.LockWithLabel(ctx, "qws.subscribe.unsubscribe"); err != nil {
 		return err
 	}
 	defer s.lock.Unlock()
