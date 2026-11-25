@@ -19,6 +19,8 @@ type Lock struct {
 	ctx   context.Context
 	depth byte
 	owner string
+	// since is when the current holder acquired the lock, for hold-time statistics.
+	since time.Time
 }
 
 func (l *Lock) LockWithLabel(ctx context.Context, label string) error {
@@ -34,11 +36,14 @@ func (l *Lock) LockWithLabel(ctx context.Context, label string) error {
 	}
 	l.mu.Unlock()
 
+	start := time.Now()
 	done := ctx.Done()
 	select {
 	case <-done:
+		recordTimeout(label, time.Since(start))
 		return ErrorCtxCancelled
 	case <-l.lock:
+		acquired := time.Now()
 		l.mu.Lock()
 		defer l.mu.Unlock()
 		if done == nil {
@@ -47,6 +52,8 @@ func (l *Lock) LockWithLabel(ctx context.Context, label string) error {
 		safe.Go(func() { l.check(ctx, done) }, nil)
 		l.ctx = ctx
 		l.owner = label
+		l.since = acquired
+		recordAcquired(label, acquired.Sub(start), budget(ctx, start))
 		return nil
 	}
 }
@@ -77,8 +84,10 @@ func (l *Lock) check(ctx context.Context, done <-chan struct{}) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	if l.ctx == ctx {
-		l.releaseLocked()
+		// Before releasing, which clears the owner this reports.
+		recordReleased(l.owner, time.Since(l.since), true)
 		logger.CheckStack(fmt.Errorf("released lock %p after grace period: owner=%q ctx=%T canceled=%v depth=%d", l, l.owner, ctx, ctx.Err(), l.depth))
+		l.releaseLocked()
 	}
 }
 
@@ -110,6 +119,7 @@ func (l *Lock) Unlock() {
 	if l.ctx == nil {
 		return
 	}
+	recordReleased(l.owner, time.Since(l.since), false)
 	l.releaseLocked()
 }
 
