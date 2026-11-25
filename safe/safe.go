@@ -10,6 +10,7 @@ import (
 
 func doRecover(onError func(interface{})) {
 	if r := recover(); r != nil {
+		RecordPanic(PanicBackground)
 		if onError != nil {
 			onError(r)
 		}

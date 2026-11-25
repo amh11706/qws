@@ -399,6 +399,7 @@ func (uConn *UserConn) ListenRead(ctx context.Context) {
 func (uConn *UserConn) handleMessage(ctx context.Context, m *RawMessage) {
 	defer func() {
 		if r := recover(); r != nil {
+			safe.RecordPanic(safe.PanicWSMessage)
 			message := fmt.Sprintf("Panic serving %s: %v", uConn.PrintName(), r)
 			logger.CheckStack(errors.New(message))
 			uConn.SendInfo(ctx, "Something went wrong...")
